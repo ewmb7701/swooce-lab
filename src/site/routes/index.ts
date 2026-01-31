@@ -1,8 +1,10 @@
 import { Window } from "happy-dom";
 import { Page, PageFactory } from "#swooce";
 
+const ROUTE = "./index.html";
+
 export default class extends PageFactory {
-  override createPages(): Array<Page> {
+  override create(): Array<Page> {
     const pageWindow = new Window();
     const pageDocument = pageWindow.document;
 
@@ -16,10 +18,9 @@ export default class extends PageFactory {
   </body>
 </html>
 `;
-
     pageDocument.write(pageHtml);
 
-    const page = new Page("./index.html", pageDocument);
+    const page = new Page(ROUTE, pageDocument);
     const pages = [page];
 
     return pages;

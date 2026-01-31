@@ -3,7 +3,7 @@ import { sep } from "path";
 import { mkdir, rm } from "fs/promises";
 import { SiteGenerator } from "#swooce";
 
-import MySiteFactory from "../src/site.ts";
+import MySiteFactory from "../src/site/index.ts";
 
 // determine project paths
 const MY_SITE_GENERATOR_OUT_DIR_PATH = "./dist/";
@@ -15,7 +15,7 @@ const myProjectOutDirFileUrl = new URL(
 
 // create site
 const mySiteFactory = new MySiteFactory();
-const mySite = mySiteFactory.createSite();
+const mySite = mySiteFactory.create();
 
 // ensure clean generation output directory
 await rm(myProjectOutDirFileUrl, { recursive: true });
@@ -23,4 +23,4 @@ await mkdir(myProjectOutDirFileUrl);
 
 // generate site (emit static site files with client-side hydration to output directory)
 const mySiteGenerator = new SiteGenerator(mySite, myProjectOutDirFileUrl);
-await mySiteGenerator.generateSite();
+await mySiteGenerator.generate();

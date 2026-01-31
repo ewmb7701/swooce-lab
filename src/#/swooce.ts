@@ -27,21 +27,27 @@ class Site {
 }
 
 /**
- * Factory pages.
+ * Factory to create pages.
+ *
+ * By convention, the default module export of a path/ route.
+ * This pattern enables multiple pages to be created for a route.
+ * eg, `./src/site/routes/index.ts`, `./src/site/routes/[articles].ts`.
  */
 abstract class PageFactory {
   /**
    * Returns an array.
    */
-  abstract createPages(): Array<Page>;
+  abstract create(): Array<Page>;
 }
 
 abstract class SiteFactory {
-  abstract createSite(): Site;
+  abstract create(): Site;
 }
 
 /**
  * Generates the static site.
+ * By convention, the default module export of a site.
+ * eg, `./src/site/index.ts`
  */
 class SiteGenerator {
   readonly site: Site;
@@ -56,7 +62,7 @@ class SiteGenerator {
    * Emit static site files to output directory.
    * The emitted static site files are the final build artifacts.
    */
-  async generateSite(): Promise<void> {
+  async generate(): Promise<void> {
     for (const sitePage of this.site.pages) {
       console.log(`generating site page with route='${sitePage.route}'`);
 
