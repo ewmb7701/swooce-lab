@@ -1,0 +1,20 @@
+{
+  "name": "swooce-lab",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "imports": {
+    "#swooce": "./src/#/swooce.ts"
+  },
+  "dependencies": {
+    "happy-dom": "^20.4.0"
+  },
+  "scripts": {
+    "build": "bun run ./scripts/build.ts"
+  }
+}
