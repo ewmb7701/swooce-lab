@@ -100,7 +100,7 @@ interface CommonAPI {
 /**
  * Api used by site generation stage.
  */
-interface SiteGeneratorAPI {
+interface SiteEmitterAPI {
   readonly paths: CommonAPIPaths;
   readonly resolvers: CommonAPIResolvers;
 }
@@ -109,7 +109,7 @@ interface SiteGeneratorAPI {
  * Generator to emit static site files.
  * By convention, the default module export of `./src/site.[js|ts]`
  */
-abstract class SiteGenerator {
+abstract class SiteEmitter {
   readonly srcSite: SrcSite;
 
   constructor(srcSite: SrcSite) {
@@ -120,7 +120,7 @@ abstract class SiteGenerator {
    * Emit static site files to output directory.
    * The emitted static site files are the final build artifacts.
    */
-  abstract generate(api: SiteGeneratorAPI): Promise<void>;
+  abstract emit(api: SiteEmitterAPI): Promise<void>;
 }
 
 /**
@@ -148,9 +148,9 @@ export {
   SrcSiteFactory,
   SrcDocument,
   SrcSite,
-  SiteGenerator,
+  SiteEmitter,
   type CommonAPI,
   type CommonAPIPaths,
   type CommonAPIResolvers,
-  type SiteGeneratorAPI,
+  type SiteEmitterAPI,
 };

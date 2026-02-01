@@ -4,10 +4,10 @@ import { dirname } from "path";
 import { fileURLToPath } from "url";
 import {
   SrcDocument,
-  SiteGenerator,
+  SiteEmitter,
   type CommonAPI,
   type SrcSite,
-  type SiteGeneratorAPI,
+  type SiteEmitterAPI,
 } from "#swooce";
 
 /**
@@ -17,7 +17,7 @@ import {
  *
  * eg, /post/post-1.md.html
  */
-function resolvePageTargetRoutePath(
+function resolveDocumentRoute(
   srcDocumentsDirAbsoluteURL: URL,
   srcDocumentFileAbsoluteURL: URL,
 ): string {
@@ -27,7 +27,7 @@ function resolvePageTargetRoutePath(
 /**
  * Resolve the absolute url of a document target file.
  */
-function resolvePageTargetFileAsboluteURL(
+function resolveTargetFileAsboluteURL(
   commonApi: CommonAPI,
   document: SrcDocument,
 ): URL {
@@ -37,25 +37,22 @@ function resolvePageTargetFileAsboluteURL(
   );
 }
 
-class StandardStaticSiteGenerator extends SiteGenerator {
+class StandardStaticSiteEmitter extends SiteEmitter {
   /**
    * Emit target files to output directory.
    * The emitted files are the final build artifacts.
    */
-  async generate(api: SiteGeneratorAPI): Promise<void> {
-    for (const document of this.srcSite.srcDocuments) {
-      console.log(
-        `generating document=${JSON.stringify(document, undefined, 2)}`,
-      );
+  async emit(api: SiteEmitterAPI): Promise<void> {
+    for (const src of this.srcSite.srcDocuments) {
+      console.log(`generating document=${JSON.stringify(src, undefined, 2)}`);
 
       const documentTargetFileAbsoluteURL =
-        api.resolvers.resolvePageTargetFileAsboluteURL(api, document);
+        api.resolvers.resolvePageTargetFileAsboluteURL(api, src);
 
-      const documentTargetFileHTML =
-        document.srcContent.documentElement.outerHTML;
+      const documentTargetFileHTML = src.srcContent.documentElement.outerHTML;
 
       console.log(
-        `writing document 'route://${document.targetRoutePath}' -> '${documentTargetFileAbsoluteURL}'`,
+        `writing document 'route://${src.targetRoutePath}' -> '${documentTargetFileAbsoluteURL}'`,
       );
 
       const documentTargetFileAbsoluteUrl = dirname(
@@ -79,7 +76,7 @@ class StandardStaticSiteGenerator extends SiteGenerator {
 }
 
 export {
-  StandardStaticSiteGenerator,
-  resolvePageTargetFileAsboluteURL,
-  resolvePageTargetRoutePath,
+  StandardStaticSiteEmitter,
+  resolveTargetFileAsboluteURL,
+  resolveDocumentRoute,
 };
