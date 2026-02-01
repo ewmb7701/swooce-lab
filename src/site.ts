@@ -1,21 +1,27 @@
-import { Site, SiteFactory, type CommonAPI } from "#swooce";
-import IndexRoutePageFactory from "./pages/index.ts";
-import PostsRoutePageFactory from "./pages/post.ts";
-import BlogRoutePageFactory from "./pages/blog.ts";
+import { SrcSite, SrcSiteFactory, type CommonAPI } from "#swooce";
+import IndexRouteDocumentFactory from "./documents/index.ts";
+import PostsRouteDocumentFactory from "./documents/post.ts";
+import BlogRouteDocumentFactory from "./documents/blog.ts";
 
-export default class extends SiteFactory {
-  override async create(api: CommonAPI): Promise<Site> {
-    const indexRoutePageFactory = new IndexRoutePageFactory();
-    const indexRoutePages = await indexRoutePageFactory.create(api);
+export default class extends SrcSiteFactory {
+  override async create(api: CommonAPI): Promise<SrcSite> {
+    const indexRouteSrcDocumentFactory = new IndexRouteDocumentFactory();
+    const indexRouteSrcDocument =
+      await indexRouteSrcDocumentFactory.create(api);
 
-    const blogRoutePageFactory = new BlogRoutePageFactory();
-    const blogRoutePages = await blogRoutePageFactory.create(api);
+    const blogRouteSrcDocumentFactory = new BlogRouteDocumentFactory();
+    const blogRouteSrcDocument = await blogRouteSrcDocumentFactory.create(api);
 
-    const postsRoutePageFactory = new PostsRoutePageFactory();
-    const postsRoutePages = await postsRoutePageFactory.create(api);
+    const postsRouteSrcDocumentFactory = new PostsRouteDocumentFactory();
+    const postsRouteSrcDocuments =
+      await postsRouteSrcDocumentFactory.create(api);
 
-    const pages = [indexRoutePages, blogRoutePages, ...postsRoutePages];
+    const srcDocuments = [
+      indexRouteSrcDocument,
+      blogRouteSrcDocument,
+      ...postsRouteSrcDocuments,
+    ];
 
-    return new Site(pages);
+    return new SrcSite(srcDocuments);
   }
 }

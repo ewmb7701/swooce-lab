@@ -3,37 +3,37 @@ import { relative } from "path/posix";
 import { dirname } from "path";
 import { fileURLToPath } from "url";
 import {
-  Page,
+  SrcDocument,
   SiteGenerator,
   type CommonAPI,
-  type Site,
+  type SrcSite,
   type SiteGeneratorAPI,
 } from "#swooce";
 
 /**
- * Resolve the target route path of a page.
+ * Resolve the target route path of a document.
  *
  * nb, route paths always start with "/".
  *
  * eg, /post/post-1.md.html
  */
 function resolvePageTargetRoutePath(
-  pagesSrcDirAbsoluteURL: URL,
-  pageSrcFileAbsoluteURL: URL,
+  srcDocumentsDirAbsoluteURL: URL,
+  srcDocumentFileAbsoluteURL: URL,
 ): string {
-  return `/${relative(pagesSrcDirAbsoluteURL.href, pageSrcFileAbsoluteURL.href)}.html`;
+  return `/${relative(srcDocumentsDirAbsoluteURL.href, srcDocumentFileAbsoluteURL.href)}.html`;
 }
 
 /**
- * Resolve the absolute url of a page target file.
+ * Resolve the absolute url of a document target file.
  */
 function resolvePageTargetFileAsboluteURL(
   commonApi: CommonAPI,
-  page: Page,
+  document: SrcDocument,
 ): URL {
   return new URL(
-    `.${page.targetRoutePath}`,
-    commonApi.paths.pagesTargetDirAbsoluteURL,
+    `.${document.targetRoutePath}`,
+    commonApi.paths.targetDocumentsDirAbsoluteURL,
   );
 }
 
@@ -43,30 +43,37 @@ class StandardStaticSiteGenerator extends SiteGenerator {
    * The emitted files are the final build artifacts.
    */
   async generate(api: SiteGeneratorAPI): Promise<void> {
-    for (const page of this.site.pages) {
-      console.log(`generating page=${JSON.stringify(page, undefined, 2)}`);
+    for (const document of this.srcSite.srcDocuments) {
+      console.log(
+        `generating document=${JSON.stringify(document, undefined, 2)}`,
+      );
 
-      const pageTargetFileAbsoluteURL =
-        api.resolvers.resolvePageTargetFileAsboluteURL(api, page);
+      const documentTargetFileAbsoluteURL =
+        api.resolvers.resolvePageTargetFileAsboluteURL(api, document);
 
-      const pageTargetFileHTML = page.srcDocument.documentElement.outerHTML;
+      const documentTargetFileHTML =
+        document.srcContent.documentElement.outerHTML;
 
       console.log(
-        `writing page 'route://${page.targetRoutePath}' -> '${pageTargetFileAbsoluteURL}'`,
+        `writing document 'route://${document.targetRoutePath}' -> '${documentTargetFileAbsoluteURL}'`,
       );
 
-      const pageTargetFileAbsoluteUrl = dirname(
-        fileURLToPath(pageTargetFileAbsoluteURL),
+      const documentTargetFileAbsoluteUrl = dirname(
+        fileURLToPath(documentTargetFileAbsoluteURL),
       );
 
-      await mkdir(pageTargetFileAbsoluteUrl, {
+      await mkdir(documentTargetFileAbsoluteUrl, {
         recursive: true,
       });
-      await writeFile(pageTargetFileAbsoluteURL, pageTargetFileHTML, "utf-8");
+      await writeFile(
+        documentTargetFileAbsoluteURL,
+        documentTargetFileHTML,
+        "utf-8",
+      );
     }
   }
 
-  constructor(site: Site) {
+  constructor(site: SrcSite) {
     super(site);
   }
 }

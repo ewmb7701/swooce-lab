@@ -3,14 +3,17 @@ import { type Document } from "happy-dom";
 /**
  * source representation; must be target.
  */
-class Page {
+class SrcDocument {
   /**
    * Absolute URL of the source file.
    *
-   * eg,`/home/eric/projects/my-cool-website/src/pages/posts/reasons-im-cool.md`
+   * eg,`/home/eric/projects/my-cool-website/src/documents/posts/reasons-im-cool.md`
    */
   readonly srcFileAbsoluteURL: URL;
-  readonly srcDocument: Document;
+  /**
+   * In `Document` form.
+   */
+  readonly srcContent: Document;
   /**
    * relative to site base url.
    *
@@ -20,55 +23,55 @@ class Page {
 
   constructor(
     srcFileAbsoluteURL: URL,
-    document: Document,
+    srcContent: Document,
     targetRoutePath: string,
   ) {
     this.srcFileAbsoluteURL = srcFileAbsoluteURL;
-    this.srcDocument = document;
+    this.srcContent = srcContent;
     this.targetRoutePath = targetRoutePath;
   }
 }
 
 /**
- * source representation; must be target.
+ * source representation of site.
  */
-class Site {
-  readonly pages: Array<Page>;
-  constructor(pages: Array<Page>) {
-    this.pages = pages;
+class SrcSite {
+  readonly srcDocuments: Array<SrcDocument>;
+  constructor(documents: Array<SrcDocument>) {
+    this.srcDocuments = documents;
   }
 }
 
 interface CommonAPIPaths {
   /**
-   * The absolute URL of the "site" directory.
+   * The absolute URL of the source site directory.
    *
    * eg, "file:///home/eric/projects/my-cool-website/src/"
    *
    * By convention
    * - path of ./src
-   * - contains `site.ts` and `./pages`.
+   * - contains `site.ts` and `./documents`.
    */
-  readonly siteSrcDirAbsoluteURL: URL;
+  readonly srcSiteDirAbsoluteURL: URL;
 
   /**
-   * The absolute URL of the "pages" directory.
-   * Used to resolve routes of page files.
+   * The absolute URL of the source documents directory.
+   * Used to resolve routes of document files.
    *
-   * eg, "file:///home/eric/projects/my-cool-website/src/pages/"
+   * eg, "file:///home/eric/projects/my-cool-website/src/documents/"
    *
    * By convention
    * - path of ./src
    */
-  readonly pagesSrcDirAbsoluteURL: URL;
+  readonly srcDocumentsDirAbsoluteURL: URL;
 
   /**
-   * The absolute URL of the target directory.
+   * The absolute URL of the target documents directory.
    *
    * By convention
    * - path of ./dist
    */
-  readonly pagesTargetDirAbsoluteURL: URL;
+  readonly targetDocumentsDirAbsoluteURL: URL;
 }
 
 /**
@@ -76,11 +79,14 @@ interface CommonAPIPaths {
  */
 interface CommonAPIResolvers {
   resolvePageTargetRoutePath: (
-    pagesSrcDirAbsoluteURL: URL,
-    pageSrcFileAbsoluteURL: URL,
+    srcDocumentsDirAbsoluteURL: URL,
+    srcDocumentFileAbsoluteURL: URL,
   ) => string;
 
-  resolvePageTargetFileAsboluteURL: (api: CommonAPI, page: Page) => URL;
+  resolvePageTargetFileAsboluteURL: (
+    api: CommonAPI,
+    document: SrcDocument,
+  ) => URL;
 }
 
 /**
@@ -104,10 +110,10 @@ interface SiteGeneratorAPI {
  * By convention, the default module export of `./src/site.[js|ts]`
  */
 abstract class SiteGenerator {
-  readonly site: Site;
+  readonly srcSite: SrcSite;
 
-  constructor(site: Site) {
-    this.site = site;
+  constructor(srcSite: SrcSite) {
+    this.srcSite = srcSite;
   }
 
   /**
@@ -118,30 +124,30 @@ abstract class SiteGenerator {
 }
 
 /**
- * Factory to create pages.
+ * Factory to create source documents.
  *
  * By convention, used for the file-based routes pattern:
- * - the default export of all modules in `./src/pages/*.[js|ts]`
- * - the route of every created page should match the relative path of the source file.
- *   - eg, `./src/pages/index.ts` should export a `PageFactory` which creates a single page with route `/index.html`.
- *   - eg, `./src/pages/post.ts` should export a `PageFactory` which creates a page with route `/posts/[postId].md.html` for each file `./src/pages/posts/*.md`.
+ * - the default export of all modules in `./src/documents/*.[js|ts]`
+ * - the route of every created document should match the relative path of the source file.
+ *   - eg, `./src/documents/index.ts` should export a `DocumentFactory` which creates a single document with route `/index.html`.
+ *   - eg, `./src/documents/post.ts` should export a `DocumentFactory` which creates a document with route `/posts/[postId].md.html` for each file `./src/documents/posts/*.md`.
  */
-abstract class PageFactory {
+abstract class SrcDocumentFactory {
   /**
    * Returns an array.
    */
-  abstract create(api: CommonAPI): Promise<Page | Array<Page>>;
+  abstract create(api: CommonAPI): Promise<SrcDocument | Array<SrcDocument>>;
 }
 
-abstract class SiteFactory {
-  abstract create(api: CommonAPI): Promise<Site>;
+abstract class SrcSiteFactory {
+  abstract create(api: CommonAPI): Promise<SrcSite>;
 }
 
 export {
-  PageFactory,
-  SiteFactory,
-  Page,
-  Site,
+  SrcDocumentFactory,
+  SrcSiteFactory,
+  SrcDocument,
+  SrcSite,
   SiteGenerator,
   type CommonAPI,
   type CommonAPIPaths,

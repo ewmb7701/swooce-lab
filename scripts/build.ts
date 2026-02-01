@@ -16,15 +16,18 @@ import MySiteFactory from "../src/site.ts";
 // determine project paths
 const MY_SITE_TARGET_DIR_PATH = "../dist/";
 const mySiteSrcDirAbsoluteURL = new URL("../src/", import.meta.url);
-const myPagesSrcDirAbsoluteURL = new URL("../src/pages/", import.meta.url);
+const myDocumentSrcDirAbsoluteURL = new URL(
+  "../src/documents/",
+  import.meta.url,
+);
 const mySiteTargetDirAbsoluteUrl = new URL(
   MY_SITE_TARGET_DIR_PATH,
   import.meta.url,
 );
 const commonPaths = {
-  siteSrcDirAbsoluteURL: mySiteSrcDirAbsoluteURL,
-  pagesSrcDirAbsoluteURL: myPagesSrcDirAbsoluteURL,
-  pagesTargetDirAbsoluteURL: mySiteTargetDirAbsoluteUrl,
+  srcSiteDirAbsoluteURL: mySiteSrcDirAbsoluteURL,
+  srcDocumentsDirAbsoluteURL: myDocumentSrcDirAbsoluteURL,
+  targetDocumentsDirAbsoluteURL: mySiteTargetDirAbsoluteUrl,
 } satisfies CommonAPIPaths;
 const commonResolvers = {
   resolvePageTargetRoutePath: resolvePageTargetRoutePath,
