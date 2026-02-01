@@ -9,12 +9,15 @@
     "typescript": "^5"
   },
   "imports": {
-    "#swooce": "./src/#/swooce.ts"
+    "#swooce": "./src/#/swooce.ts",
+    "#@swooce/standard": "./src/#/@swooce/standard.ts"
   },
   "dependencies": {
+    "glob": "^13.0.0",
     "happy-dom": "^20.4.0"
   },
   "scripts": {
-    "build": "bun run ./scripts/build.ts"
+    "build": "bun run ./scripts/build.ts",
+    "preview": "bunx http-server ./dist/"
   }
 }
