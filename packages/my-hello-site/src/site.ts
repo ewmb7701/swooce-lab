@@ -1,10 +1,10 @@
-import { AstroSiteModule } from "#@swooce/astro";
-import { ModuleResolver, type API } from "#swooce";
+import { HelloSiteModule } from "@swooce/site-hello";
+import { ModuleResolver, type API } from "swooce";
 import IndexRouteModuleResolver from "./pages/index.ts";
 import PostRouteModuleResolver from "./pages/post.ts";
 import BlogRouteModuleResolver from "./pages/blog.ts";
 
-export default class extends ModuleResolver<AstroSiteModule> {
+export default class extends ModuleResolver<HelloSiteModule> {
   override async resolve(api: API) {
     const indexRouteModuleResolver = new IndexRouteModuleResolver();
     const indexRouteDocument = await indexRouteModuleResolver.resolve(api);
@@ -21,6 +21,6 @@ export default class extends ModuleResolver<AstroSiteModule> {
       ...postRouteDocument,
     ];
 
-    return new AstroSiteModule(new URL(import.meta.url), allPageModule);
+    return new HelloSiteModule(new URL(import.meta.url), allPageModule);
   }
 }

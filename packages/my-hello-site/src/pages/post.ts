@@ -1,6 +1,6 @@
 import { Document, Window } from "happy-dom";
 import { glob } from "glob";
-import { ContentModule, ModuleResolver, type API } from "#swooce";
+import { ContentModule, ModuleResolver, type API } from "swooce";
 
 class PostPageModule extends ContentModule<Document> {
   override async fetch(_api: API): Promise<Document> {

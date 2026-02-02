@@ -1,23 +1,11 @@
 {
   "name": "swooce-lab",
-  "type": "module",
   "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "type": "module",
   "devDependencies": {
     "@types/bun": "latest"
-  },
-  "peerDependencies": {
-    "typescript": "^5"
-  },
-  "imports": {
-    "#swooce": "./src/#/swooce.ts",
-    "#@swooce/astro": "./src/#/@swooce/astro.ts"
-  },
-  "dependencies": {
-    "glob": "^13.0.0",
-    "happy-dom": "^20.4.0"
-  },
-  "scripts": {
-    "build": "bun run ./scripts/build.ts",
-    "preview": "bunx http-server ./dist/"
   }
 }

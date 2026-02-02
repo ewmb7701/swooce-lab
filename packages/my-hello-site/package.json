@@ -1,0 +1,21 @@
+{
+  "name": "swooce-lab",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "glob": "^13.0.0",
+    "happy-dom": "^20.4.0",
+    "swooce": "workspace:*",
+    "@swooce/site-hello": "workspace:*"
+  },
+  "scripts": {
+    "build": "bun run ./scripts/build.ts",
+    "preview": "bunx http-server ./dist/"
+  }
+}

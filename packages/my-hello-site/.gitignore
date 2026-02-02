@@ -2,8 +2,9 @@
 node_modules
 
 # output
-out
 dist
+out
+target
 *.tgz
 
 # code coverage

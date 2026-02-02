@@ -1,5 +1,5 @@
 /**
- * this source file contains `swooce` items for static site generation like Astro.
+ * this source file contains `swooce` items for static site generation like Hello.
  *
  * This is a *lab*.
  *
@@ -11,9 +11,9 @@ import { relative } from "path/posix";
 import { dirname } from "path";
 import { fileURLToPath } from "url";
 import type { Document } from "happy-dom";
-import { ContentModule, Module, ModuleEmitter, type API } from "#swooce";
+import { ContentModule, Module, ModuleEmitter, type API } from "swooce";
 
-function createAstroSiteAPI(projectDirURL: URL): API {
+function createHelloSiteAPI(projectDirURL: URL): API {
   const srcDirURL = new URL("./src/", projectDirURL);
   const targetDirURL = new URL("./dist/", projectDirURL);
 
@@ -48,7 +48,7 @@ function createAstroSiteAPI(projectDirURL: URL): API {
   } satisfies API;
 }
 
-class AstroSiteModule extends Module {
+class HelloSiteModule extends Module {
   /**
    * eg, pages, assets.
    */
@@ -59,12 +59,12 @@ class AstroSiteModule extends Module {
   }
 }
 
-class AstroSiteEmitter extends ModuleEmitter<AstroSiteModule> {
+class HelloSiteEmitter extends ModuleEmitter<HelloSiteModule> {
   /**
    * Emit module content to output directory.
    * The emitted files are the final build artifacts.
    */
-  async emit(api: API, site: AstroSiteModule): Promise<void> {
+  async emit(api: API, site: HelloSiteModule): Promise<void> {
     // we *could* use a ModuleEmitter for each page...
     for (const iPageModule of site.pageModule) {
       console.log(`emitting page '${iPageModule.srcFileURL}'`);
@@ -103,4 +103,4 @@ class AstroSiteEmitter extends ModuleEmitter<AstroSiteModule> {
   }
 }
 
-export { AstroSiteModule, AstroSiteEmitter, createAstroSiteAPI };
+export { HelloSiteModule, HelloSiteEmitter, createHelloSiteAPI };

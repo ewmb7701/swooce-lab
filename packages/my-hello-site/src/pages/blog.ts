@@ -1,5 +1,5 @@
 import { Document, Window as DOMWindow } from "happy-dom";
-import { ContentModule, ModuleResolver, type API } from "#swooce";
+import { ContentModule, ModuleResolver, type API } from "swooce";
 import { glob } from "glob";
 
 class BlogPageModule extends ContentModule<Document> {
@@ -31,7 +31,7 @@ class BlogPageModule extends ContentModule<Document> {
     </title>
   </head>
   <body>
-    <p>This is where I will post about my journey learning Astro.</p>
+    <p>Hello! This is my blog website. Based on Astro.</p>
     <ul>
       ${documentContentAllPostPageHTMLListItems}
     </ul>

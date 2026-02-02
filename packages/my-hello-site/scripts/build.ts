@@ -1,9 +1,9 @@
 import { mkdir, rm } from "fs/promises";
-import { AstroSiteEmitter, createAstroSiteAPI } from "#@swooce/astro";
+import { HelloSiteEmitter, createHelloSiteAPI } from "@swooce/site-hello";
 
 import MySiteModuleResolver from "../src/site.ts";
 
-const api = createAstroSiteAPI(new URL("../", import.meta.url));
+const api = createHelloSiteAPI(new URL("../", import.meta.url));
 
 // create site
 const mySiteModuleResolver = new MySiteModuleResolver();
@@ -14,6 +14,6 @@ try {
 } catch (error) {}
 await mkdir(api.paths.targetDirURL);
 
-// generate site (emit static site files with client-side hydration to target directory)
-const staticSiteEmitter = new AstroSiteEmitter();
-await staticSiteEmitter.emit(api, mySiteModule);
+// generate site
+const helloSiteEmitter = new HelloSiteEmitter();
+await helloSiteEmitter.emit(api, mySiteModule);

@@ -1,5 +1,5 @@
 import { Document, Window } from "happy-dom";
-import { ContentModule, ModuleResolver, type API } from "#swooce";
+import { ContentModule, ModuleResolver, type API } from "swooce";
 
 class IndexPageModule extends ContentModule<Document> {
   override async fetch(_api: API) {
