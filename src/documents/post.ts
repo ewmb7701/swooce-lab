@@ -1,9 +1,9 @@
 import { glob } from "glob";
 import { Window } from "happy-dom";
-import { SrcDocument, SrcDocumentFactory, type CommonAPI } from "#swooce";
+import { SrcDocument, SrcDocumentFactory, type API } from "#swooce";
 
 export default class extends SrcDocumentFactory {
-  override async create(api: CommonAPI) {
+  override async create(_api: API) {
     // fetch inputs
     const srcDocumentsFileRelativePaths = await glob(`./post/*.md`, {
       cwd: import.meta.dir,
@@ -13,11 +13,11 @@ export default class extends SrcDocumentFactory {
 
     let srcDocuments = [];
     for await (const srcDocumentFileRelativePath of srcDocumentsFileRelativePaths) {
-      const srcDocumentFileAbsoluteURL = new URL(
+      const srcDocumentFileURL = new URL(
         import.meta.resolve(srcDocumentFileRelativePath),
       );
       const srcDocumentContentText = await (
-        await fetch(srcDocumentFileAbsoluteURL)
+        await fetch(srcDocumentFileURL)
       ).text();
       const srcDocumentContent = new Window().document;
 
@@ -39,15 +39,9 @@ export default class extends SrcDocumentFactory {
 `;
       srcDocumentContent.write(srcDocumentContentHtml);
 
-      const targetDocumentRoutePath = api.resolvers.resolvePageTargetRoutePath(
-        api.paths.srcDocumentsDirAbsoluteURL,
-        srcDocumentFileAbsoluteURL,
-      );
-
       const srcDocument = new SrcDocument(
-        new URL(import.meta.url),
+        srcDocumentFileURL,
         srcDocumentContent,
-        targetDocumentRoutePath,
       );
       srcDocuments.push(srcDocument);
     }

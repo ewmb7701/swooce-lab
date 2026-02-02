@@ -1,10 +1,10 @@
-import { SrcSite, SrcSiteFactory, type CommonAPI } from "#swooce";
+import { SrcSite, SrcSiteFactory, type API } from "#swooce";
 import IndexRouteDocumentFactory from "./documents/index.ts";
 import PostsRouteDocumentFactory from "./documents/post.ts";
 import BlogRouteDocumentFactory from "./documents/blog.ts";
 
 export default class extends SrcSiteFactory {
-  override async create(api: CommonAPI): Promise<SrcSite> {
+  override async create(api: API): Promise<SrcSite> {
     const indexRouteSrcDocumentFactory = new IndexRouteDocumentFactory();
     const indexRouteSrcDocument =
       await indexRouteSrcDocumentFactory.create(api);

@@ -9,26 +9,15 @@ class SrcDocument {
    *
    * eg,`/home/eric/projects/my-cool-website/src/documents/posts/reasons-im-cool.md`
    */
-  readonly srcFileAbsoluteURL: URL;
+  readonly srcFileURL: URL;
   /**
    * In `Document` form.
    */
   readonly srcContent: Document;
-  /**
-   * relative to site base url.
-   *
-   * eg, `/posts/reasons-im-cool.md.html`
-   */
-  readonly targetRoutePath: string;
 
-  constructor(
-    srcFileAbsoluteURL: URL,
-    srcContent: Document,
-    targetRoutePath: string,
-  ) {
-    this.srcFileAbsoluteURL = srcFileAbsoluteURL;
+  constructor(srcFileURL: URL, srcContent: Document) {
+    this.srcFileURL = srcFileURL;
     this.srcContent = srcContent;
-    this.targetRoutePath = targetRoutePath;
   }
 }
 
@@ -36,13 +25,13 @@ class SrcDocument {
  * source representation of site.
  */
 class SrcSite {
-  readonly srcDocuments: Array<SrcDocument>;
-  constructor(documents: Array<SrcDocument>) {
-    this.srcDocuments = documents;
+  readonly srcDocument: Array<SrcDocument>;
+  constructor(srcDocument: Array<SrcDocument>) {
+    this.srcDocument = srcDocument;
   }
 }
 
-interface CommonAPIPaths {
+interface APIPaths {
   /**
    * The absolute URL of the source site directory.
    *
@@ -52,7 +41,7 @@ interface CommonAPIPaths {
    * - path of ./src
    * - contains `site.ts` and `./documents`.
    */
-  readonly srcSiteDirAbsoluteURL: URL;
+  readonly srcSiteDirURL: URL;
 
   /**
    * The absolute URL of the source documents directory.
@@ -63,7 +52,7 @@ interface CommonAPIPaths {
    * By convention
    * - path of ./src
    */
-  readonly srcDocumentsDirAbsoluteURL: URL;
+  readonly srcDocumentsDirURL: URL;
 
   /**
    * The absolute URL of the target documents directory.
@@ -71,56 +60,47 @@ interface CommonAPIPaths {
    * By convention
    * - path of ./dist
    */
-  readonly targetDocumentsDirAbsoluteURL: URL;
+  readonly targetDocumentsDirURL: URL;
 }
 
 /**
  * Common resolvers used by multiple build stages.
  */
-interface CommonAPIResolvers {
-  resolvePageTargetRoutePath: (
-    srcDocumentsDirAbsoluteURL: URL,
-    srcDocumentFileAbsoluteURL: URL,
-  ) => string;
+interface APIResolvers {
+  /**
+   * Resolve the relative target route of the srcDocument file
+   */
+  resolveSrcDocumentTargetRoute: (api: API, srcDocumentFileURL: URL) => string;
 
-  resolvePageTargetFileAsboluteURL: (
-    api: CommonAPI,
-    document: SrcDocument,
+  /**
+   * Resolve the absolute target URL of the srcDocument file.
+   *
+   * eg, resolves `file:///home/eric/projects/my-cool-website/src/documents/posts/post-1.md` to `file:///home/eric/projects/my-cool-website/target/documents/posts/post-1.md`.
+   */
+  resolveTargetDocumentFileAsboluteURL: (
+    api: API,
+    srcDocument: SrcDocument,
   ) => URL;
 }
 
 /**
  * common API used by multiple build stages.
  */
-interface CommonAPI {
-  readonly paths: CommonAPIPaths;
-  readonly resolvers: CommonAPIResolvers;
+interface API {
+  readonly paths: APIPaths;
+  readonly resolvers: APIResolvers;
 }
 
 /**
- * Api used by site generation stage.
- */
-interface SiteEmitterAPI {
-  readonly paths: CommonAPIPaths;
-  readonly resolvers: CommonAPIResolvers;
-}
-
-/**
- * Generator to emit static site files.
+ * Emitter to emit static site files.
  * By convention, the default module export of `./src/site.[js|ts]`
  */
 abstract class SiteEmitter {
-  readonly srcSite: SrcSite;
-
-  constructor(srcSite: SrcSite) {
-    this.srcSite = srcSite;
-  }
-
   /**
    * Emit static site files to output directory.
    * The emitted static site files are the final build artifacts.
    */
-  abstract emit(api: SiteEmitterAPI): Promise<void>;
+  abstract emit(api: API, srcSite: SrcSite): Promise<void>;
 }
 
 /**
@@ -136,21 +116,20 @@ abstract class SrcDocumentFactory {
   /**
    * Returns an array.
    */
-  abstract create(api: CommonAPI): Promise<SrcDocument | Array<SrcDocument>>;
+  abstract create(api: API): Promise<SrcDocument | Array<SrcDocument>>;
 }
 
 abstract class SrcSiteFactory {
-  abstract create(api: CommonAPI): Promise<SrcSite>;
+  abstract create(api: API): Promise<SrcSite>;
 }
 
 export {
-  SrcDocumentFactory,
-  SrcSiteFactory,
   SrcDocument,
+  SrcDocumentFactory,
   SrcSite,
+  SrcSiteFactory,
   SiteEmitter,
-  type CommonAPI,
-  type CommonAPIPaths,
-  type CommonAPIResolvers,
-  type SiteEmitterAPI,
+  type API,
+  type APIPaths,
+  type APIResolvers,
 };
