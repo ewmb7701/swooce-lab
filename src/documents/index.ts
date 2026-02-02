@@ -1,10 +1,10 @@
 import { Window } from "happy-dom";
-import { DocumentSrc, DocumentSrcFactory, type API } from "#swooce";
+import { Document, DocumentFactory, type API } from "#swooce";
 
-export default class extends DocumentSrcFactory {
+export default class extends DocumentFactory {
   override create(_api: API) {
-    const documentSrcContent = new Window().document;
-    const documentSrcContentHtml = `
+    const documentContent = new Window().document;
+    const documentContentHTML = `
 <!DOCTYPE html>
 <html>
   <head>
@@ -17,13 +17,10 @@ export default class extends DocumentSrcFactory {
   </body>
 </html>
 `;
-    documentSrcContent.write(documentSrcContentHtml);
+    documentContent.write(documentContentHTML);
 
-    const documentSrc = new DocumentSrc(
-      new URL(import.meta.url),
-      documentSrcContent,
-    );
+    const document = new Document(new URL(import.meta.url), documentContent);
 
-    return Promise.resolve(documentSrc);
+    return Promise.resolve(document);
   }
 }

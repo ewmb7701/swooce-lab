@@ -1,32 +1,31 @@
-import { Window } from "happy-dom";
+import { Window as DOMWindow } from "happy-dom";
 import { glob } from "glob";
-import { DocumentSrc, DocumentSrcFactory, type API } from "#swooce";
+import { Document, DocumentFactory, type API } from "#swooce";
 
-export default class extends DocumentSrcFactory {
+export default class extends DocumentFactory {
   override async create(api: API) {
     // fetch inputs
-    const allInputPostDocumentSrcFileRelativePath = await glob(`./post/*.md`, {
+    const allPostDocumentSrcFileRelativePath = await glob(`./post/*.md`, {
       cwd: import.meta.dir,
       posix: true,
       dotRelative: true,
     });
 
     // create document content
-    const documentSrcContentHTMLListItems =
-      allInputPostDocumentSrcFileRelativePath.map(
-        (iDocumentSrcGlobRelativePath) => {
-          const iDocumentSrcFileURL = new URL(
-            import.meta.resolve(iDocumentSrcGlobRelativePath),
-          );
+    const documentContentHTMLListItems = allPostDocumentSrcFileRelativePath.map(
+      (iDocumentSrcGlobRelativePath) => {
+        const iDocumentSrcFileURL = new URL(
+          import.meta.resolve(iDocumentSrcGlobRelativePath),
+        );
 
-          const iDocumentRoute = api.resolvers.resolveDocumentRoute(
-            api,
-            iDocumentSrcFileURL,
-          );
+        const iDocumentRoute = api.resolvers.resolveDocumentRoute(
+          api,
+          iDocumentSrcFileURL,
+        );
 
-          return `<li><a href="${iDocumentRoute}">${iDocumentSrcGlobRelativePath}</a></li>`;
-        },
-      );
+        return `<li><a href="${iDocumentRoute}">${iDocumentSrcGlobRelativePath}</a></li>`;
+      },
+    );
     const documentSrcContentHTML = `
 <!DOCTYPE html>
 <html>
@@ -38,19 +37,16 @@ export default class extends DocumentSrcFactory {
   <body>
     <p>This is where I will post about my journey learning Astro.</p>
     <ul>
-      ${documentSrcContentHTMLListItems}
+      ${documentContentHTMLListItems}
     </ul>
   </body>
 </html>
 `;
-    const documentSrcContent = new Window().document;
-    documentSrcContent.write(documentSrcContentHTML);
+    const documentContent = new DOMWindow().document;
+    documentContent.write(documentSrcContentHTML);
 
-    const documentSrc = new DocumentSrc(
-      new URL(import.meta.url),
-      documentSrcContent,
-    );
+    const document = new Document(new URL(import.meta.url), documentContent);
 
-    return Promise.resolve(documentSrc);
+    return Promise.resolve(document);
   }
 }

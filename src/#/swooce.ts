@@ -1,63 +1,59 @@
-import { type Document } from "happy-dom";
+import { type Document as DOMDocument } from "happy-dom";
 
-/**
- * source representation; must be target.
- */
-class DocumentSrc {
+class Document {
   /**
-   * Absolute URL of the source file.
+   * Absolute URL of the source file of this document.
    *
    * eg,`/home/eric/projects/my-cool-website/src/documents/posts/reasons-im-cool.md`
    */
-  readonly fileURL: URL;
+  readonly srcFileURL: URL;
   /**
-   * In `Document` form.
+   * Content of this document.
    */
-  readonly content: Document;
+  readonly content: DOMDocument;
 
-  constructor(fileURL: URL, content: Document) {
-    this.fileURL = fileURL;
+  constructor(srcFileURL: URL, content: DOMDocument) {
+    this.srcFileURL = srcFileURL;
     this.content = content;
   }
 }
 
 /**
- * source representation of site.
+ * Representation of site.
  */
-class SiteSrc {
-  readonly allDocumentSrc: Array<DocumentSrc>;
-  constructor(allDocumentSrc: Array<DocumentSrc>) {
-    this.allDocumentSrc = allDocumentSrc;
+class Site {
+  readonly allDocument: Array<Document>;
+  constructor(allDocument: Array<Document>) {
+    this.allDocument = allDocument;
   }
 }
 
 interface APIPaths {
   /**
-   * The absolute URL of the source site directory.
+   * The absolute URL of the site source directory.
    *
    * eg, "file:///home/eric/projects/my-cool-website/src/"
    *
-   * By convention
+   * By convention:
    * - path of ./src
    * - contains `site.ts` and `./documents`.
    */
-  readonly siteSrcDirURL: URL;
+  readonly srcDirURL: URL;
 
   /**
-   * The absolute URL of the source documents directory.
-   * Used to resolve routes of document files.
+   * The absolute URL of the documents source directory.
    *
    * eg, "file:///home/eric/projects/my-cool-website/src/documents/"
    *
-   * By convention
+   * By convention:
    * - path of ./src
    */
   readonly documentSrcDirURL: URL;
 
   /**
-   * The absolute URL of the target documents directory.
+   * The absolute URL of the documents target directory.
    *
-   * By convention
+   * By convention:
    * - path of ./dist
    */
   readonly documentTargetDirURL: URL;
@@ -77,10 +73,7 @@ interface APIResolvers {
    *
    * eg, resolves `file:///home/eric/projects/my-cool-website/src/documents/posts/post-1.md` to `file:///home/eric/projects/my-cool-website/target/documents/posts/post-1.md`.
    */
-  resolveDocumentTargetFileAsboluteURL: (
-    api: API,
-    documentSrc: DocumentSrc,
-  ) => URL;
+  resolveDocumentTargetFileAsboluteURL: (api: API, document: Document) => URL;
 }
 
 /**
@@ -100,11 +93,11 @@ abstract class SiteEmitter {
    * Emit static site files to target directory.
    * The emitted static site files are the final build artifacts.
    */
-  abstract emit(api: API, siteSrc: SiteSrc): Promise<void>;
+  abstract emit(api: API, site: Site): Promise<void>;
 }
 
 /**
- * Factory to create source documents.
+ * Factory to create documents.
  *
  * By convention, used for the file-based routes pattern:
  * - the default export of all modules in `./src/documents/*.[js|ts]`
@@ -112,22 +105,22 @@ abstract class SiteEmitter {
  *   - eg, `./src/documents/index.ts` should export a `DocumentFactory` which creates a single document with route `/index.html`.
  *   - eg, `./src/documents/post.ts` should export a `DocumentFactory` which creates a document with route `/posts/[postId].md.html` for each file `./src/documents/posts/*.md`.
  */
-abstract class DocumentSrcFactory {
+abstract class DocumentFactory {
   /**
    * Returns an array.
    */
-  abstract create(api: API): Promise<DocumentSrc | Array<DocumentSrc>>;
+  abstract create(api: API): Promise<Document | Array<Document>>;
 }
 
-abstract class SiteSrcFactory {
-  abstract create(api: API): Promise<SiteSrc>;
+abstract class SiteFactory {
+  abstract create(api: API): Promise<Site>;
 }
 
 export {
-  DocumentSrc,
-  DocumentSrcFactory,
-  SiteSrc,
-  SiteSrcFactory,
+  Document,
+  DocumentFactory,
+  Site,
+  SiteFactory,
   SiteEmitter,
   type API,
   type APIPaths,

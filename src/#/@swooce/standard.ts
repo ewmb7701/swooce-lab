@@ -3,11 +3,11 @@ import { relative } from "path/posix";
 import { dirname } from "path";
 import { fileURLToPath } from "url";
 import {
-  DocumentSrc,
+  Document,
   SiteEmitter,
   type API,
   type APIResolvers,
-  type SiteSrc,
+  type Site,
 } from "#swooce";
 
 const staticSiteResolvers = {
@@ -26,9 +26,15 @@ const staticSiteResolvers = {
    */
   resolveDocumentTargetFileAsboluteURL: function (
     api: API,
-    documentSrc: DocumentSrc,
+    documentSrc: Document,
   ): URL {
-    const documentRoute = this.resolveDocumentRoute(api, documentSrc.fileURL);
+    const documentRoute = this.resolveDocumentRoute(
+      api,
+      documentSrc.srcFileURL,
+    );
+
+    console.log(documentRoute);
+    console.log(api.paths.documentTargetDirURL);
 
     return new URL(`.${documentRoute}`, api.paths.documentTargetDirURL);
   },
@@ -39,17 +45,16 @@ class StaticSiteEmitter extends SiteEmitter {
    * Emit target files to output directory.
    * The emitted files are the final build artifacts.
    */
-  async emit(api: API, siteSrc: SiteSrc): Promise<void> {
-    for (const documentSrc of siteSrc.allDocumentSrc) {
+  async emit(api: API, site: Site): Promise<void> {
+    for (const document of site.allDocument) {
       console.log(
-        `generating document=${JSON.stringify(documentSrc, undefined, 2)}`,
+        `generating document=${JSON.stringify(document, undefined, 2)}`,
       );
 
       const documentTargetFileURL =
-        api.resolvers.resolveDocumentTargetFileAsboluteURL(api, documentSrc);
+        api.resolvers.resolveDocumentTargetFileAsboluteURL(api, document);
 
-      const documentTargetFileHTML =
-        documentSrc.content.documentElement.outerHTML;
+      const documentTargetFileHTML = document.content.documentElement.outerHTML;
 
       const documentTargetFileAbsoluteUrl = dirname(
         fileURLToPath(documentTargetFileURL),

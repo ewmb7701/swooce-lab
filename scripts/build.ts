@@ -5,17 +5,17 @@ import { staticSiteResolvers, StaticSiteEmitter } from "#@swooce/standard";
 import MySiteFactory from "../src/site.ts";
 
 // determine project paths
-const MY_SITE_TARGET_DIR_PATH = "../dist/";
-const mySiteSrcDirURL = new URL("../src/", import.meta.url);
-const myDocumentSrcDirURL = new URL("../src/documents/", import.meta.url);
-const mySiteTargetDirAbsoluteUrl = new URL(
-  MY_SITE_TARGET_DIR_PATH,
+const FOO_TARGET_DIR_PATH = "../dist/";
+const fooSiteSrcDirURL = new URL("../src/", import.meta.url);
+const fooSiteDocumentSrcDirURL = new URL("../src/documents/", import.meta.url);
+const fooSiteTargetDirAbsoluteUrl = new URL(
+  FOO_TARGET_DIR_PATH,
   import.meta.url,
 );
 const apiPaths = {
-  siteSrcDirURL: mySiteSrcDirURL,
-  documentSrcDirURL: myDocumentSrcDirURL,
-  documentTargetDirURL: mySiteTargetDirAbsoluteUrl,
+  srcDirURL: fooSiteSrcDirURL,
+  documentSrcDirURL: fooSiteDocumentSrcDirURL,
+  documentTargetDirURL: fooSiteTargetDirAbsoluteUrl,
 } satisfies APIPaths;
 const apiResolvers = staticSiteResolvers;
 const api: API = {
@@ -28,8 +28,8 @@ const mySiteFactory = new MySiteFactory();
 const mySiteSrc = await mySiteFactory.create(api);
 
 // ensure clean generation target directory
-await rm(mySiteTargetDirAbsoluteUrl, { recursive: true });
-await mkdir(mySiteTargetDirAbsoluteUrl);
+await rm(fooSiteTargetDirAbsoluteUrl, { recursive: true });
+await mkdir(fooSiteTargetDirAbsoluteUrl);
 
 // generate site (emit static site files with client-side hydration to target directory)
 const staticSiteEmitter = new StaticSiteEmitter();

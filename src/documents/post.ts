@@ -1,8 +1,8 @@
 import { glob } from "glob";
 import { Window } from "happy-dom";
-import { DocumentSrc, DocumentSrcFactory, type API } from "#swooce";
+import { Document, DocumentFactory, type API } from "#swooce";
 
-export default class extends DocumentSrcFactory {
+export default class extends DocumentFactory {
   override async create(_api: API) {
     // fetch inputs
     const allDocumentSrcFileRelativePath = await glob(`./post/*.md`, {
@@ -39,7 +39,7 @@ export default class extends DocumentSrcFactory {
 `;
       iDocumentSrcContent.write(iDocumentSrcContentHtml);
 
-      const iDocumentSrc = new DocumentSrc(
+      const iDocumentSrc = new Document(
         iDocumentSrcFileURL,
         iDocumentSrcContent,
       );
