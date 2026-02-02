@@ -1,27 +1,22 @@
 import { Document, Window as DOMWindow } from "happy-dom";
-import { ContentModule, ModuleResolver, type API } from "swooce";
+import { ModuleResolver, type Context } from "swooce";
+import { ContentModule } from "@swooce/core";
 import { glob } from "glob";
 
 class BlogPageModule extends ContentModule<Document> {
-  readonly allPostPageSrcFileRelativePath: string[];
+  readonly allPostPageModuleSrcURL: URL[];
 
-  override async fetch(api: API): Promise<Document> {
+  override async fetch(ctx: Context): Promise<Document> {
     // create document content
     const documentContentAllPostPageHTMLListItems =
-      this.allPostPageSrcFileRelativePath.map(
-        (iPostPageSrcFileRelativePath) => {
-          const iModuleSrcFileURL = new URL(
-            import.meta.resolve(iPostPageSrcFileRelativePath),
-          );
+      this.allPostPageModuleSrcURL.map((iModuleSrcFileURL) => {
+        const iDocumentRoute = ctx.paths.resolveModuleRoute(
+          ctx,
+          iModuleSrcFileURL,
+        );
 
-          const iDocumentRoute = api.paths.resolveModuleRoute(
-            api,
-            iModuleSrcFileURL,
-          );
-
-          return `<li><a href="${iDocumentRoute}">${iPostPageSrcFileRelativePath}</a></li>`;
-        },
-      );
+        return `<li><a href="${iDocumentRoute}">${iDocumentRoute}</a></li>`;
+      });
     const contentDocumentHTML = `
 <!DOCTYPE html>
 <html>
@@ -47,24 +42,29 @@ class BlogPageModule extends ContentModule<Document> {
     return document;
   }
 
-  constructor(srcFileURL: URL, allPostPageSrcFileRelativePath: string[]) {
+  constructor(srcFileURL: URL, allPostPageModuleSrcURL: URL[]) {
     super(srcFileURL);
-    this.allPostPageSrcFileRelativePath = allPostPageSrcFileRelativePath;
+    this.allPostPageModuleSrcURL = allPostPageModuleSrcURL;
   }
 }
 
 export default class extends ModuleResolver<BlogPageModule> {
-  override async resolve(_api: API) {
-    // resolve content deps
+  override async resolve(_ctx: Context) {
+    // resolve module dependencies
     const allPostModuleSrcFileRelativePath = await glob(`./post/*.md`, {
       cwd: import.meta.dir,
       posix: true,
       dotRelative: true,
     });
 
+    const allPostModuleSrcFileRelativeURL =
+      allPostModuleSrcFileRelativePath.map((iPostPageSrcFileRelativePath) => {
+        return new URL(import.meta.resolve(iPostPageSrcFileRelativePath));
+      });
+
     return new BlogPageModule(
       new URL(import.meta.url),
-      allPostModuleSrcFileRelativePath,
+      allPostModuleSrcFileRelativeURL,
     );
   }
 }

@@ -1,8 +1,9 @@
 import { Document, Window } from "happy-dom";
-import { ContentModule, ModuleResolver, type API } from "swooce";
+import { ModuleResolver, type Context } from "swooce";
+import { ContentModule } from "@swooce/core";
 
 class IndexPageModule extends ContentModule<Document> {
-  override async fetch(_api: API) {
+  override async fetch(_ctx: Context) {
     const window = new Window();
     const document = window.document;
     const documentHTML = `
@@ -15,6 +16,12 @@ class IndexPageModule extends ContentModule<Document> {
   </head>
   <body>
     <h1>Index</h1>
+    <img
+      src="/clock-drawing.png"
+    />
+    <img
+      src="/clock-drawing.svg"
+    />
   </body>
 </html>
 `;
@@ -27,7 +34,7 @@ class IndexPageModule extends ContentModule<Document> {
 }
 
 export default class extends ModuleResolver<IndexPageModule> {
-  override resolve(_api: API) {
+  override resolve(_ctx: Context) {
     return Promise.resolve(new IndexPageModule(new URL(import.meta.url)));
   }
 }

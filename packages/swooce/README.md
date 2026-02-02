@@ -1,16 +1,20 @@
-# swooce-lab
+# swooce
 
 > Watch me _swooce_ right in!
 
 # Overview
 
-`swooce` is a static site generation library with islands-based architecture inspired by frameworks like [hello.build](https://hello.build/).
+`swooce` is a micro-framework designed for simple site configuration.
 
 # Concepts
 
 ## Module
 
-A module emits content.
+First-class site object that will be emit. eg, a page or an asset.
+
+## ModuleEmitter
+
+Emits a file for the module to the target directory.
 
 # Patterns
 

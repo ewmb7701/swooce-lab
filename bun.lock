@@ -8,9 +8,39 @@
         "@types/bun": "latest",
       },
     },
+    "packages/@swooce+core": {
+      "name": "@swooce/core",
+      "dependencies": {
+        "glob": "^13.0.0",
+        "swooce": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "packages/@swooce+happy-dom": {
+      "name": "@swooce/happy-dom",
+      "dependencies": {
+        "@swooce/core": "workspace:*",
+        "glob": "^13.0.0",
+        "happy-dom": "^20.4.0",
+        "swooce": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
     "packages/@swooce+site-hello": {
       "name": "@swooce/site-hello",
       "dependencies": {
+        "@swooce/core": "workspace:*",
+        "@swooce/happy-dom": "workspace:*",
         "swooce": "workspace:*",
       },
       "devDependencies": {
@@ -23,6 +53,7 @@
     "packages/my-hello-site": {
       "name": "swooce-lab",
       "dependencies": {
+        "@swooce/core": "workspace:*",
         "@swooce/site-hello": "workspace:*",
         "glob": "^13.0.0",
         "happy-dom": "^20.4.0",
@@ -49,6 +80,10 @@
     "@isaacs/balanced-match": ["@isaacs/balanced-match@4.0.1", "", {}, "sha512-yzMTt9lEb8Gv7zRioUilSglI0c0smZ9k5D65677DLWLtWJaXIS3CqcGyUFByYKlnUj6TkjLVs54fBl6+TiGQDQ=="],
 
     "@isaacs/brace-expansion": ["@isaacs/brace-expansion@5.0.0", "", { "dependencies": { "@isaacs/balanced-match": "^4.0.1" } }, "sha512-ZT55BDLV0yv0RBm2czMiZ+SqCGO7AvmOM3G/w2xhVPH+te0aKgFjmBvGlL1dH+ql2tgGO3MVrbb3jCKyvpgnxA=="],
+
+    "@swooce/core": ["@swooce/core@workspace:packages/@swooce+core"],
+
+    "@swooce/happy-dom": ["@swooce/happy-dom@workspace:packages/@swooce+happy-dom"],
 
     "@swooce/site-hello": ["@swooce/site-hello@workspace:packages/@swooce+site-hello"],
 

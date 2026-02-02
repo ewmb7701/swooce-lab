@@ -1,5 +1,5 @@
 {
-  "name": "@swooce/site-hello",
+  "name": "@swooce/core",
   "module": "index.ts",
   "type": "module",
   "private": true,
@@ -10,8 +10,7 @@
     "typescript": "^5"
   },
   "dependencies": {
-    "swooce": "workspace:*",
-    "@swooce/core": "workspace:*",
-    "@swooce/happy-dom": "workspace:*"
+    "glob": "^13.0.0",
+    "swooce": "workspace:*"
   }
 }

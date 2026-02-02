@@ -1,3 +1,6 @@
+/**
+ * {@link @swooce/core/VoidModule}
+ */
 abstract class Module {
   /**
    * Absolute URL of the source file of this module.
@@ -11,14 +14,7 @@ abstract class Module {
   }
 }
 
-abstract class ContentModule<TContent> extends Module {
-  /**
-   * Fetch the content of the src file of this module.
-   */
-  abstract fetch(api: API): Promise<TContent>;
-}
-
-interface APIPaths {
+interface ContextPaths {
   /**
    * The absolute URL of the site source directory.
    *
@@ -39,47 +35,44 @@ interface APIPaths {
   /**
    * Resolve the route of a module using the module src file URL.
    */
-  resolveModuleRoute: (api: API, moduleSrcFileURL: URL) => string;
+  resolveModuleRoute: (ctx: Context, moduleSrcFileURL: URL) => string;
 
   /**
    * Resolve the absolute target URL of a module.
    *
    * eg, resolves `file:///home/eric/projects/my-cool-website/src/document/posts/post-1.md` to `file:///home/eric/projects/my-cool-website/target/document/posts/post-1.md`.
    */
-  resolveModuleTargetFileURL: (api: API, module: Module) => URL;
+  resolveModuleTargetFileURL: (ctx: Context, module: Module) => URL;
 }
 
 /**
- * Site API.
+ * Site-wide context shared between all modules, like project paths and resolvers.
  *
- * Contains site-wide policies, like routes.
- *
- * Provided to all modules and pipelines.
+ * Provided to all primitives.
  */
-interface API {
-  readonly paths: APIPaths;
+interface Context {
+  readonly paths: ContextPaths;
 }
 
 abstract class ModuleEmitter<TModule extends Module> {
   /**
    * Emit site files to target directory.
-   * The emitted static site files are the final build artifacts.
+   * The emitted public site files are the final build artifacts.
    */
-  abstract emit(api: API, module: TModule): Promise<void>;
+  abstract emit(ctx: Context, module: TModule): Promise<void>;
 }
 
 abstract class ModuleResolver<TModule extends Module> {
   /**
    * Returns an array.
    */
-  abstract resolve(api: API): Promise<TModule | Array<TModule>>;
+  abstract resolve(ctx: Context): Promise<TModule | Array<TModule>>;
 }
 
 export {
   Module,
   ModuleResolver,
   ModuleEmitter,
-  ContentModule,
-  type API,
-  type APIPaths,
+  type Context,
+  type ContextPaths,
 };
