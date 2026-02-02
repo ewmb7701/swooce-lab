@@ -1,25 +1,26 @@
-import { Site, SiteFactory, type API } from "#swooce";
-import IndexRouteDocumentFactory from "./document/index.ts";
-import PostsRouteDocumentFactory from "./document/post.ts";
-import BlogRouteDocumentFactory from "./document/blog.ts";
+import { AstroSiteModule } from "#@swooce/astro";
+import { ModuleResolver, type API } from "#swooce";
+import IndexRouteModuleResolver from "./pages/index.ts";
+import PostRouteModuleResolver from "./pages/post.ts";
+import BlogRouteModuleResolver from "./pages/blog.ts";
 
-export default class extends SiteFactory {
-  override async create(api: API): Promise<Site> {
-    const indexRouteDocumentFactory = new IndexRouteDocumentFactory();
-    const indexRouteDocument = await indexRouteDocumentFactory.create(api);
+export default class extends ModuleResolver<AstroSiteModule> {
+  override async resolve(api: API) {
+    const indexRouteModuleResolver = new IndexRouteModuleResolver();
+    const indexRouteDocument = await indexRouteModuleResolver.resolve(api);
 
-    const blogRouteDocumentFactory = new BlogRouteDocumentFactory();
-    const blogRouteDocument = await blogRouteDocumentFactory.create(api);
+    const blogRouteModuleResolver = new BlogRouteModuleResolver();
+    const blogRouteDocument = await blogRouteModuleResolver.resolve(api);
 
-    const allPostRouteDocumentFactory = new PostsRouteDocumentFactory();
-    const allPostRouteDocument = await allPostRouteDocumentFactory.create(api);
+    const postRouteModuleResolver = new PostRouteModuleResolver();
+    const postRouteDocument = await postRouteModuleResolver.resolve(api);
 
-    const allDocument = [
+    const allPageModule = [
       indexRouteDocument,
       blogRouteDocument,
-      ...allPostRouteDocument,
+      ...postRouteDocument,
     ];
 
-    return new Site(allDocument);
+    return new AstroSiteModule(new URL(import.meta.url), allPageModule);
   }
 }

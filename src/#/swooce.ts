@@ -1,31 +1,21 @@
-import { type Document as DOMDocument } from "happy-dom";
-
-class Document {
+abstract class Module {
   /**
-   * Absolute URL of the source file of this document.
+   * Absolute URL of the source file of this module.
    *
    * eg,`/home/eric/projects/my-cool-website/src/document/posts/reasons-im-cool.md`
    */
   readonly srcFileURL: URL;
-  /**
-   * Content of this document.
-   */
-  readonly content: DOMDocument;
 
-  constructor(srcFileURL: URL, content: DOMDocument) {
+  constructor(srcFileURL: URL) {
     this.srcFileURL = srcFileURL;
-    this.content = content;
   }
 }
 
-/**
- * Representation of site.
- */
-class Site {
-  readonly allDocument: Array<Document>;
-  constructor(allDocument: Array<Document>) {
-    this.allDocument = allDocument;
-  }
+abstract class ContentModule<TContent> extends Module {
+  /**
+   * Fetch the content of the src file of this module.
+   */
+  abstract fetch(api: API): Promise<TContent>;
 }
 
 interface APIPaths {
@@ -33,96 +23,63 @@ interface APIPaths {
    * The absolute URL of the site source directory.
    *
    * eg, "file:///home/eric/projects/my-cool-website/src/"
-   *
-   * By convention:
-   * - path of ./src
-   * - contains `site.ts` and `./document`.
    */
-  readonly siteSrcDirURL: URL;
-
-  /**
-   * The absolute URL of the document source directory.
-   *
-   * eg, "file:///home/eric/projects/my-cool-website/src/document/"
-   *
-   * By convention:
-   * - path of ./src
-   */
-  readonly documentSrcDirURL: URL;
+  readonly srcDirURL: URL;
 
   /**
    * The absolute URL of the document target directory.
    *
+   * eg, "file:///home/eric/projects/my-cool-website/dist/"
+   *
    * By convention:
    * - path of ./dist
    */
-  readonly documentTargetDirURL: URL;
-}
+  readonly targetDirURL: URL;
 
-/**
- * Common resolvers used by multiple build stages.
- */
-interface APIResolvers {
   /**
-   * Resolve the route of a document using the document src file URL.
+   * Resolve the route of a module using the module src file URL.
    */
-  resolveDocumentRoute: (api: API, documentSrcFileURL: URL) => string;
+  resolveModuleRoute: (api: API, moduleSrcFileURL: URL) => string;
 
   /**
-   * Resolve the absolute target URL of a document.
+   * Resolve the absolute target URL of a module.
    *
    * eg, resolves `file:///home/eric/projects/my-cool-website/src/document/posts/post-1.md` to `file:///home/eric/projects/my-cool-website/target/document/posts/post-1.md`.
    */
-  resolveDocumentTargetFileAsboluteURL: (api: API, document: Document) => URL;
+  resolveModuleTargetFileURL: (api: API, module: Module) => URL;
 }
 
 /**
- * common API used by multiple build stages.
+ * Site API.
+ *
+ * Contains site-wide policies, like routes.
+ *
+ * Provided to all modules and pipelines.
  */
 interface API {
   readonly paths: APIPaths;
-  readonly resolvers: APIResolvers;
 }
 
-/**
- * Emitter to emit static site files.
- * By convention, the default module export of `./src/site.[js|ts]`
- */
-abstract class SiteEmitter {
+abstract class ModuleEmitter<TModule extends Module> {
   /**
-   * Emit static site files to target directory.
+   * Emit site files to target directory.
    * The emitted static site files are the final build artifacts.
    */
-  abstract emit(api: API, site: Site): Promise<void>;
+  abstract emit(api: API, module: TModule): Promise<void>;
 }
 
-/**
- * Factory to create document.
- *
- * By convention, used for the file-based routes pattern:
- * - the default export of all modules in `./src/document/*.[js|ts]`
- * - the route of every created document should match the relative path of the source file.
- *   - eg, `./src/document/index.ts` should export a `DocumentFactory` which creates a single document with route `/index.html`.
- *   - eg, `./src/document/post.ts` should export a `DocumentFactory` which creates a document with route `/posts/[postId].md.html` for each file `./src/document/posts/*.md`.
- */
-abstract class DocumentFactory {
+abstract class ModuleResolver<TModule extends Module> {
   /**
    * Returns an array.
    */
-  abstract create(api: API): Promise<Document | Array<Document>>;
-}
-
-abstract class SiteFactory {
-  abstract create(api: API): Promise<Site>;
+  abstract resolve(api: API): Promise<TModule | Array<TModule>>;
 }
 
 export {
-  Document,
-  DocumentFactory,
-  Site,
-  SiteFactory,
-  SiteEmitter,
+  Module,
+  ModuleResolver,
+  ModuleEmitter,
+  ContentModule,
   type API,
   type APIPaths,
-  type APIResolvers,
 };

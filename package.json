@@ -10,7 +10,7 @@
   },
   "imports": {
     "#swooce": "./src/#/swooce.ts",
-    "#@swooce/standard": "./src/#/@swooce/standard.ts"
+    "#@swooce/astro": "./src/#/@swooce/astro.ts"
   },
   "dependencies": {
     "glob": "^13.0.0",

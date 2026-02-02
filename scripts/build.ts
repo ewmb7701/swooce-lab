@@ -1,36 +1,19 @@
 import { mkdir, rm } from "fs/promises";
-import { API, APIPaths } from "#swooce";
-import { staticSiteResolvers, StaticSiteEmitter } from "#@swooce/standard";
+import { AstroSiteEmitter, createAstroSiteAPI } from "#@swooce/astro";
 
-import MySiteFactory from "../src/site.ts";
+import MySiteModuleResolver from "../src/site.ts";
 
-// determine project paths
-const FOO_TARGET_DIR_PATH = "../dist/";
-const fooSiteSrcDirURL = new URL("../src/", import.meta.url);
-const fooSiteDocumentSrcDirURL = new URL("../src/document/", import.meta.url);
-const fooSiteTargetDirAbsoluteUrl = new URL(
-  FOO_TARGET_DIR_PATH,
-  import.meta.url,
-);
-const apiPaths = {
-  siteSrcDirURL: fooSiteSrcDirURL,
-  documentSrcDirURL: fooSiteDocumentSrcDirURL,
-  documentTargetDirURL: fooSiteTargetDirAbsoluteUrl,
-} satisfies APIPaths;
-const apiResolvers = staticSiteResolvers;
-const api: API = {
-  resolvers: apiResolvers,
-  paths: apiPaths,
-};
+const api = createAstroSiteAPI(new URL("../", import.meta.url));
 
 // create site
-const mySiteFactory = new MySiteFactory();
-const mySiteSrc = await mySiteFactory.create(api);
+const mySiteModuleResolver = new MySiteModuleResolver();
+const mySiteModule = await mySiteModuleResolver.resolve(api);
 
-// ensure clean generation target directory
-await rm(fooSiteTargetDirAbsoluteUrl, { recursive: true });
-await mkdir(fooSiteTargetDirAbsoluteUrl);
+try {
+  await rm(api.paths.targetDirURL, { recursive: true, force: true });
+} catch (error) {}
+await mkdir(api.paths.targetDirURL);
 
 // generate site (emit static site files with client-side hydration to target directory)
-const staticSiteEmitter = new StaticSiteEmitter();
-await staticSiteEmitter.emit(api, mySiteSrc);
+const staticSiteEmitter = new AstroSiteEmitter();
+await staticSiteEmitter.emit(api, mySiteModule);
