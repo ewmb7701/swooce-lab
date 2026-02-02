@@ -4,7 +4,7 @@ import { Document, DocumentFactory, type API } from "#swooce";
 
 export default class extends DocumentFactory {
   override async create(api: API) {
-    // fetch inputs
+    // fetch document inputs
     const allPostDocumentSrcFileRelativePath = await glob(`./post/*.md`, {
       cwd: import.meta.dir,
       posix: true,
@@ -26,7 +26,7 @@ export default class extends DocumentFactory {
         return `<li><a href="${iDocumentRoute}">${iDocumentSrcGlobRelativePath}</a></li>`;
       },
     );
-    const documentSrcContentHTML = `
+    const documentContentHTML = `
 <!DOCTYPE html>
 <html>
   <head>
@@ -43,7 +43,7 @@ export default class extends DocumentFactory {
 </html>
 `;
     const documentContent = new DOMWindow().document;
-    documentContent.write(documentSrcContentHTML);
+    documentContent.write(documentContentHTML);
 
     const document = new Document(new URL(import.meta.url), documentContent);
 

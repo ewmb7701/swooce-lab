@@ -4,7 +4,7 @@ class Document {
   /**
    * Absolute URL of the source file of this document.
    *
-   * eg,`/home/eric/projects/my-cool-website/src/documents/posts/reasons-im-cool.md`
+   * eg,`/home/eric/projects/my-cool-website/src/document/posts/reasons-im-cool.md`
    */
   readonly srcFileURL: URL;
   /**
@@ -36,14 +36,14 @@ interface APIPaths {
    *
    * By convention:
    * - path of ./src
-   * - contains `site.ts` and `./documents`.
+   * - contains `site.ts` and `./document`.
    */
-  readonly srcDirURL: URL;
+  readonly siteSrcDirURL: URL;
 
   /**
-   * The absolute URL of the documents source directory.
+   * The absolute URL of the document source directory.
    *
-   * eg, "file:///home/eric/projects/my-cool-website/src/documents/"
+   * eg, "file:///home/eric/projects/my-cool-website/src/document/"
    *
    * By convention:
    * - path of ./src
@@ -51,7 +51,7 @@ interface APIPaths {
   readonly documentSrcDirURL: URL;
 
   /**
-   * The absolute URL of the documents target directory.
+   * The absolute URL of the document target directory.
    *
    * By convention:
    * - path of ./dist
@@ -71,7 +71,7 @@ interface APIResolvers {
   /**
    * Resolve the absolute target URL of a document.
    *
-   * eg, resolves `file:///home/eric/projects/my-cool-website/src/documents/posts/post-1.md` to `file:///home/eric/projects/my-cool-website/target/documents/posts/post-1.md`.
+   * eg, resolves `file:///home/eric/projects/my-cool-website/src/document/posts/post-1.md` to `file:///home/eric/projects/my-cool-website/target/document/posts/post-1.md`.
    */
   resolveDocumentTargetFileAsboluteURL: (api: API, document: Document) => URL;
 }
@@ -97,13 +97,13 @@ abstract class SiteEmitter {
 }
 
 /**
- * Factory to create documents.
+ * Factory to create document.
  *
  * By convention, used for the file-based routes pattern:
- * - the default export of all modules in `./src/documents/*.[js|ts]`
+ * - the default export of all modules in `./src/document/*.[js|ts]`
  * - the route of every created document should match the relative path of the source file.
- *   - eg, `./src/documents/index.ts` should export a `DocumentFactory` which creates a single document with route `/index.html`.
- *   - eg, `./src/documents/post.ts` should export a `DocumentFactory` which creates a document with route `/posts/[postId].md.html` for each file `./src/documents/posts/*.md`.
+ *   - eg, `./src/document/index.ts` should export a `DocumentFactory` which creates a single document with route `/index.html`.
+ *   - eg, `./src/document/post.ts` should export a `DocumentFactory` which creates a document with route `/posts/[postId].md.html` for each file `./src/document/posts/*.md`.
  */
 abstract class DocumentFactory {
   /**

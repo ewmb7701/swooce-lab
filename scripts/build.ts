@@ -7,13 +7,13 @@ import MySiteFactory from "../src/site.ts";
 // determine project paths
 const FOO_TARGET_DIR_PATH = "../dist/";
 const fooSiteSrcDirURL = new URL("../src/", import.meta.url);
-const fooSiteDocumentSrcDirURL = new URL("../src/documents/", import.meta.url);
+const fooSiteDocumentSrcDirURL = new URL("../src/document/", import.meta.url);
 const fooSiteTargetDirAbsoluteUrl = new URL(
   FOO_TARGET_DIR_PATH,
   import.meta.url,
 );
 const apiPaths = {
-  srcDirURL: fooSiteSrcDirURL,
+  siteSrcDirURL: fooSiteSrcDirURL,
   documentSrcDirURL: fooSiteDocumentSrcDirURL,
   documentTargetDirURL: fooSiteTargetDirAbsoluteUrl,
 } satisfies APIPaths;

@@ -12,9 +12,9 @@ import {
 
 const staticSiteResolvers = {
   /**
-   * Equal to the relative URL path of the source document file wrt "/src/documents" dir.
+   * Equal to the relative URL path of the source document file wrt "/src/document" dir.
    *
-   * eg, resolves `file:///home/eric/projects/my-cool-website/src/documents/posts/post-1.md` to `/posts/post-1.md.html`.
+   * eg, resolves `file:///home/eric/projects/my-cool-website/src/document/posts/post-1.md` to `/posts/post-1.md.html`.
    */
   resolveDocumentRoute: function (api: API, documentSrcFileURL: URL): string {
     return `/${relative(api.paths.documentSrcDirURL.href, documentSrcFileURL.href)}.html`;
@@ -22,19 +22,13 @@ const staticSiteResolvers = {
   /**
    * Resolve the absolute target URL of the documentSrc file.
    *
-   * eg, resolves `file:///home/eric/projects/my-cool-website/src/documents/posts/post-1.md` to `file:///home/eric/projects/my-cool-website/target/documents/posts/post-1.md`.
+   * eg, resolves `file:///home/eric/projects/my-cool-website/src/document/posts/post-1.md` to `file:///home/eric/projects/my-cool-website/target/document/posts/post-1.md`.
    */
   resolveDocumentTargetFileAsboluteURL: function (
     api: API,
-    documentSrc: Document,
+    document: Document,
   ): URL {
-    const documentRoute = this.resolveDocumentRoute(
-      api,
-      documentSrc.srcFileURL,
-    );
-
-    console.log(documentRoute);
-    console.log(api.paths.documentTargetDirURL);
+    const documentRoute = this.resolveDocumentRoute(api, document.srcFileURL);
 
     return new URL(`.${documentRoute}`, api.paths.documentTargetDirURL);
   },

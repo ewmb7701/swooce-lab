@@ -1,27 +1,25 @@
 import { Site, SiteFactory, type API } from "#swooce";
-import IndexRouteDocumentSrcFactory from "./documents/index.ts";
-import PostsRouteDocumentSrcFactory from "./documents/post.ts";
-import BlogRouteDocumentSrcFactory from "./documents/blog.ts";
+import IndexRouteDocumentFactory from "./document/index.ts";
+import PostsRouteDocumentFactory from "./document/post.ts";
+import BlogRouteDocumentFactory from "./document/blog.ts";
 
 export default class extends SiteFactory {
   override async create(api: API): Promise<Site> {
-    const indexRouteDocumentSrcFactory = new IndexRouteDocumentSrcFactory();
-    const indexRouteDocumentSrc =
-      await indexRouteDocumentSrcFactory.create(api);
+    const indexRouteDocumentFactory = new IndexRouteDocumentFactory();
+    const indexRouteDocument = await indexRouteDocumentFactory.create(api);
 
-    const blogRouteDocumentSrcFactory = new BlogRouteDocumentSrcFactory();
-    const blogRouteDocumentSrc = await blogRouteDocumentSrcFactory.create(api);
+    const blogRouteDocumentFactory = new BlogRouteDocumentFactory();
+    const blogRouteDocument = await blogRouteDocumentFactory.create(api);
 
-    const postsRouteDocumentSrcFactory = new PostsRouteDocumentSrcFactory();
-    const postsRouteDocumentSrcs =
-      await postsRouteDocumentSrcFactory.create(api);
+    const allPostRouteDocumentFactory = new PostsRouteDocumentFactory();
+    const allPostRouteDocument = await allPostRouteDocumentFactory.create(api);
 
-    const documentSrcs = [
-      indexRouteDocumentSrc,
-      blogRouteDocumentSrc,
-      ...postsRouteDocumentSrcs,
+    const allDocument = [
+      indexRouteDocument,
+      blogRouteDocument,
+      ...allPostRouteDocument,
     ];
 
-    return new Site(documentSrcs);
+    return new Site(allDocument);
   }
 }
