@@ -3,31 +3,31 @@ import { type Document } from "happy-dom";
 /**
  * source representation; must be target.
  */
-class SrcDocument {
+class DocumentSrc {
   /**
    * Absolute URL of the source file.
    *
    * eg,`/home/eric/projects/my-cool-website/src/documents/posts/reasons-im-cool.md`
    */
-  readonly srcFileURL: URL;
+  readonly fileURL: URL;
   /**
    * In `Document` form.
    */
-  readonly srcContent: Document;
+  readonly content: Document;
 
-  constructor(srcFileURL: URL, srcContent: Document) {
-    this.srcFileURL = srcFileURL;
-    this.srcContent = srcContent;
+  constructor(fileURL: URL, content: Document) {
+    this.fileURL = fileURL;
+    this.content = content;
   }
 }
 
 /**
  * source representation of site.
  */
-class SrcSite {
-  readonly srcDocument: Array<SrcDocument>;
-  constructor(srcDocument: Array<SrcDocument>) {
-    this.srcDocument = srcDocument;
+class SiteSrc {
+  readonly allDocumentSrc: Array<DocumentSrc>;
+  constructor(allDocumentSrc: Array<DocumentSrc>) {
+    this.allDocumentSrc = allDocumentSrc;
   }
 }
 
@@ -41,7 +41,7 @@ interface APIPaths {
    * - path of ./src
    * - contains `site.ts` and `./documents`.
    */
-  readonly srcSiteDirURL: URL;
+  readonly siteSrcDirURL: URL;
 
   /**
    * The absolute URL of the source documents directory.
@@ -52,7 +52,7 @@ interface APIPaths {
    * By convention
    * - path of ./src
    */
-  readonly srcDocumentsDirURL: URL;
+  readonly documentSrcDirURL: URL;
 
   /**
    * The absolute URL of the target documents directory.
@@ -60,7 +60,7 @@ interface APIPaths {
    * By convention
    * - path of ./dist
    */
-  readonly targetDocumentsDirURL: URL;
+  readonly documentTargetDirURL: URL;
 }
 
 /**
@@ -68,18 +68,18 @@ interface APIPaths {
  */
 interface APIResolvers {
   /**
-   * Resolve the relative target route of the srcDocument file
+   * Resolve the route of a document using the document src file URL.
    */
-  resolveSrcDocumentTargetRoute: (api: API, srcDocumentFileURL: URL) => string;
+  resolveDocumentRoute: (api: API, documentSrcFileURL: URL) => string;
 
   /**
-   * Resolve the absolute target URL of the srcDocument file.
+   * Resolve the absolute target URL of a document.
    *
    * eg, resolves `file:///home/eric/projects/my-cool-website/src/documents/posts/post-1.md` to `file:///home/eric/projects/my-cool-website/target/documents/posts/post-1.md`.
    */
-  resolveTargetDocumentFileAsboluteURL: (
+  resolveDocumentTargetFileAsboluteURL: (
     api: API,
-    srcDocument: SrcDocument,
+    documentSrc: DocumentSrc,
   ) => URL;
 }
 
@@ -97,10 +97,10 @@ interface API {
  */
 abstract class SiteEmitter {
   /**
-   * Emit static site files to output directory.
+   * Emit static site files to target directory.
    * The emitted static site files are the final build artifacts.
    */
-  abstract emit(api: API, srcSite: SrcSite): Promise<void>;
+  abstract emit(api: API, siteSrc: SiteSrc): Promise<void>;
 }
 
 /**
@@ -112,22 +112,22 @@ abstract class SiteEmitter {
  *   - eg, `./src/documents/index.ts` should export a `DocumentFactory` which creates a single document with route `/index.html`.
  *   - eg, `./src/documents/post.ts` should export a `DocumentFactory` which creates a document with route `/posts/[postId].md.html` for each file `./src/documents/posts/*.md`.
  */
-abstract class SrcDocumentFactory {
+abstract class DocumentSrcFactory {
   /**
    * Returns an array.
    */
-  abstract create(api: API): Promise<SrcDocument | Array<SrcDocument>>;
+  abstract create(api: API): Promise<DocumentSrc | Array<DocumentSrc>>;
 }
 
-abstract class SrcSiteFactory {
-  abstract create(api: API): Promise<SrcSite>;
+abstract class SiteSrcFactory {
+  abstract create(api: API): Promise<SiteSrc>;
 }
 
 export {
-  SrcDocument,
-  SrcDocumentFactory,
-  SrcSite,
-  SrcSiteFactory,
+  DocumentSrc,
+  DocumentSrcFactory,
+  SiteSrc,
+  SiteSrcFactory,
   SiteEmitter,
   type API,
   type APIPaths,

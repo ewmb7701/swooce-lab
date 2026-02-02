@@ -1,51 +1,51 @@
 import { glob } from "glob";
 import { Window } from "happy-dom";
-import { SrcDocument, SrcDocumentFactory, type API } from "#swooce";
+import { DocumentSrc, DocumentSrcFactory, type API } from "#swooce";
 
-export default class extends SrcDocumentFactory {
+export default class extends DocumentSrcFactory {
   override async create(_api: API) {
     // fetch inputs
-    const srcDocumentsFileRelativePaths = await glob(`./post/*.md`, {
+    const allDocumentSrcFileRelativePath = await glob(`./post/*.md`, {
       cwd: import.meta.dir,
       posix: true,
       dotRelative: true,
     });
 
-    let srcDocuments = [];
-    for await (const srcDocumentFileRelativePath of srcDocumentsFileRelativePaths) {
-      const srcDocumentFileURL = new URL(
-        import.meta.resolve(srcDocumentFileRelativePath),
+    let allDocumentSrc = [];
+    for await (const iDocumentSrcFileRelativePath of allDocumentSrcFileRelativePath) {
+      const iDocumentSrcFileURL = new URL(
+        import.meta.resolve(iDocumentSrcFileRelativePath),
       );
-      const srcDocumentContentText = await (
-        await fetch(srcDocumentFileURL)
+      const iDocumentSrcContentText = await (
+        await fetch(iDocumentSrcFileURL)
       ).text();
-      const srcDocumentContent = new Window().document;
+      const iDocumentSrcContent = new Window().document;
 
       // TODO generate proper html with frontmatter (use some markdown parser)
-      const srcDocumentContentHtml = `
+      const iDocumentSrcContentHtml = `
 <!DOCTYPE html>
 <html>
   <head>
     <title>
-    ${srcDocumentFileRelativePath}
+    ${iDocumentSrcFileRelativePath}
     </title>
   </head>
   <body>
     <pre>
-      ${srcDocumentContentText}
+      ${iDocumentSrcContentText}
     </pre>
   </body>
 </html>
 `;
-      srcDocumentContent.write(srcDocumentContentHtml);
+      iDocumentSrcContent.write(iDocumentSrcContentHtml);
 
-      const srcDocument = new SrcDocument(
-        srcDocumentFileURL,
-        srcDocumentContent,
+      const iDocumentSrc = new DocumentSrc(
+        iDocumentSrcFileURL,
+        iDocumentSrcContent,
       );
-      srcDocuments.push(srcDocument);
+      allDocumentSrc.push(iDocumentSrc);
     }
 
-    return Promise.resolve(srcDocuments);
+    return Promise.resolve(allDocumentSrc);
   }
 }

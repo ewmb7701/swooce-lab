@@ -3,11 +3,11 @@ import { relative } from "path/posix";
 import { dirname } from "path";
 import { fileURLToPath } from "url";
 import {
-  SrcDocument,
+  DocumentSrc,
   SiteEmitter,
   type API,
   type APIResolvers,
-  type SrcSite,
+  type SiteSrc,
 } from "#swooce";
 
 const staticSiteResolvers = {
@@ -16,30 +16,21 @@ const staticSiteResolvers = {
    *
    * eg, resolves `file:///home/eric/projects/my-cool-website/src/documents/posts/post-1.md` to `/posts/post-1.md.html`.
    */
-  resolveSrcDocumentTargetRoute: function (
-    api: API,
-    srcDocumentFileURL: URL,
-  ): string {
-    return `/${relative(api.paths.srcDocumentsDirURL.href, srcDocumentFileURL.href)}.html`;
+  resolveDocumentRoute: function (api: API, documentSrcFileURL: URL): string {
+    return `/${relative(api.paths.documentSrcDirURL.href, documentSrcFileURL.href)}.html`;
   },
   /**
-   * Resolve the absolute target URL of the srcDocument file.
+   * Resolve the absolute target URL of the documentSrc file.
    *
    * eg, resolves `file:///home/eric/projects/my-cool-website/src/documents/posts/post-1.md` to `file:///home/eric/projects/my-cool-website/target/documents/posts/post-1.md`.
    */
-  resolveTargetDocumentFileAsboluteURL: function (
+  resolveDocumentTargetFileAsboluteURL: function (
     api: API,
-    srcDocument: SrcDocument,
+    documentSrc: DocumentSrc,
   ): URL {
-    const documentTargetRoutePath = this.resolveSrcDocumentTargetRoute(
-      api,
-      srcDocument.srcFileURL,
-    );
+    const documentRoute = this.resolveDocumentRoute(api, documentSrc.fileURL);
 
-    return new URL(
-      `.${documentTargetRoutePath}`,
-      api.paths.targetDocumentsDirURL,
-    );
+    return new URL(`.${documentRoute}`, api.paths.documentTargetDirURL);
   },
 } satisfies APIResolvers;
 
@@ -48,23 +39,26 @@ class StaticSiteEmitter extends SiteEmitter {
    * Emit target files to output directory.
    * The emitted files are the final build artifacts.
    */
-  async emit(api: API, srcSite: SrcSite): Promise<void> {
-    for (const src of srcSite.srcDocument) {
-      console.log(`generating document=${JSON.stringify(src, undefined, 2)}`);
-
-      const targetDocumentFileURL =
-        api.resolvers.resolveTargetDocumentFileAsboluteURL(api, src);
-
-      const targetDocumentFileHTML = src.srcContent.documentElement.outerHTML;
-
-      const targetDocumentFileAbsoluteUrl = dirname(
-        fileURLToPath(targetDocumentFileURL),
+  async emit(api: API, siteSrc: SiteSrc): Promise<void> {
+    for (const documentSrc of siteSrc.allDocumentSrc) {
+      console.log(
+        `generating document=${JSON.stringify(documentSrc, undefined, 2)}`,
       );
 
-      await mkdir(targetDocumentFileAbsoluteUrl, {
+      const documentTargetFileURL =
+        api.resolvers.resolveDocumentTargetFileAsboluteURL(api, documentSrc);
+
+      const documentTargetFileHTML =
+        documentSrc.content.documentElement.outerHTML;
+
+      const documentTargetFileAbsoluteUrl = dirname(
+        fileURLToPath(documentTargetFileURL),
+      );
+
+      await mkdir(documentTargetFileAbsoluteUrl, {
         recursive: true,
       });
-      await writeFile(targetDocumentFileURL, targetDocumentFileHTML, "utf-8");
+      await writeFile(documentTargetFileURL, documentTargetFileHTML, "utf-8");
     }
   }
 

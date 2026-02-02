@@ -13,9 +13,9 @@ const mySiteTargetDirAbsoluteUrl = new URL(
   import.meta.url,
 );
 const apiPaths = {
-  srcSiteDirURL: mySiteSrcDirURL,
-  srcDocumentsDirURL: myDocumentSrcDirURL,
-  targetDocumentsDirURL: mySiteTargetDirAbsoluteUrl,
+  siteSrcDirURL: mySiteSrcDirURL,
+  documentSrcDirURL: myDocumentSrcDirURL,
+  documentTargetDirURL: mySiteTargetDirAbsoluteUrl,
 } satisfies APIPaths;
 const apiResolvers = staticSiteResolvers;
 const api: API = {

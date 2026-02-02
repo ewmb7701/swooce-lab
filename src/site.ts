@@ -1,27 +1,27 @@
-import { SrcSite, SrcSiteFactory, type API } from "#swooce";
-import IndexRouteDocumentFactory from "./documents/index.ts";
-import PostsRouteDocumentFactory from "./documents/post.ts";
-import BlogRouteDocumentFactory from "./documents/blog.ts";
+import { SiteSrc, SiteSrcFactory, type API } from "#swooce";
+import IndexRouteDocumentSrcFactory from "./documents/index.ts";
+import PostsRouteDocumentSrcFactory from "./documents/post.ts";
+import BlogRouteDocumentSrcFactory from "./documents/blog.ts";
 
-export default class extends SrcSiteFactory {
-  override async create(api: API): Promise<SrcSite> {
-    const indexRouteSrcDocumentFactory = new IndexRouteDocumentFactory();
-    const indexRouteSrcDocument =
-      await indexRouteSrcDocumentFactory.create(api);
+export default class extends SiteSrcFactory {
+  override async create(api: API): Promise<SiteSrc> {
+    const indexRouteDocumentSrcFactory = new IndexRouteDocumentSrcFactory();
+    const indexRouteDocumentSrc =
+      await indexRouteDocumentSrcFactory.create(api);
 
-    const blogRouteSrcDocumentFactory = new BlogRouteDocumentFactory();
-    const blogRouteSrcDocument = await blogRouteSrcDocumentFactory.create(api);
+    const blogRouteDocumentSrcFactory = new BlogRouteDocumentSrcFactory();
+    const blogRouteDocumentSrc = await blogRouteDocumentSrcFactory.create(api);
 
-    const postsRouteSrcDocumentFactory = new PostsRouteDocumentFactory();
-    const postsRouteSrcDocuments =
-      await postsRouteSrcDocumentFactory.create(api);
+    const postsRouteDocumentSrcFactory = new PostsRouteDocumentSrcFactory();
+    const postsRouteDocumentSrcs =
+      await postsRouteDocumentSrcFactory.create(api);
 
-    const srcDocuments = [
-      indexRouteSrcDocument,
-      blogRouteSrcDocument,
-      ...postsRouteSrcDocuments,
+    const documentSrcs = [
+      indexRouteDocumentSrc,
+      blogRouteDocumentSrc,
+      ...postsRouteDocumentSrcs,
     ];
 
-    return new SrcSite(srcDocuments);
+    return new SiteSrc(documentSrcs);
   }
 }

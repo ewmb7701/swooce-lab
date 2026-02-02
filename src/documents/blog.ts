@@ -1,33 +1,33 @@
 import { Window } from "happy-dom";
 import { glob } from "glob";
-import { SrcDocument, SrcDocumentFactory, type API } from "#swooce";
+import { DocumentSrc, DocumentSrcFactory, type API } from "#swooce";
 
-export default class extends SrcDocumentFactory {
+export default class extends DocumentSrcFactory {
   override async create(api: API) {
     // fetch inputs
-    const inputFilesRelativeGlob = glob(`./post/*.md`, {
+    const allInputPostDocumentSrcFileRelativePath = await glob(`./post/*.md`, {
       cwd: import.meta.dir,
       posix: true,
       dotRelative: true,
     });
-    const inputFilesRelativePaths = await inputFilesRelativeGlob;
 
     // create document content
-    const srcDocumentContentHTMLLists = inputFilesRelativePaths.map(
-      (srcDocumentGlobRelativePath) => {
-        const srcDocumentFileURL = new URL(
-          import.meta.resolve(srcDocumentGlobRelativePath),
-        );
+    const documentSrcContentHTMLListItems =
+      allInputPostDocumentSrcFileRelativePath.map(
+        (iDocumentSrcGlobRelativePath) => {
+          const iDocumentSrcFileURL = new URL(
+            import.meta.resolve(iDocumentSrcGlobRelativePath),
+          );
 
-        const targetFileRoutePath = api.resolvers.resolveSrcDocumentTargetRoute(
-          api,
-          srcDocumentFileURL,
-        );
+          const iDocumentRoute = api.resolvers.resolveDocumentRoute(
+            api,
+            iDocumentSrcFileURL,
+          );
 
-        return `<li><a href="${targetFileRoutePath}">${srcDocumentGlobRelativePath}</a></li>`;
-      },
-    );
-    const srcDocumentContentHTML = `
+          return `<li><a href="${iDocumentRoute}">${iDocumentSrcGlobRelativePath}</a></li>`;
+        },
+      );
+    const documentSrcContentHTML = `
 <!DOCTYPE html>
 <html>
   <head>
@@ -38,19 +38,19 @@ export default class extends SrcDocumentFactory {
   <body>
     <p>This is where I will post about my journey learning Astro.</p>
     <ul>
-      ${srcDocumentContentHTMLLists}
+      ${documentSrcContentHTMLListItems}
     </ul>
   </body>
 </html>
 `;
-    const srcDocumentContent = new Window().document;
-    srcDocumentContent.write(srcDocumentContentHTML);
+    const documentSrcContent = new Window().document;
+    documentSrcContent.write(documentSrcContentHTML);
 
-    const srcDocument = new SrcDocument(
+    const documentSrc = new DocumentSrc(
       new URL(import.meta.url),
-      srcDocumentContent,
+      documentSrcContent,
     );
 
-    return Promise.resolve(srcDocument);
+    return Promise.resolve(documentSrc);
   }
 }
