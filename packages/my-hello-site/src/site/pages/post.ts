@@ -1,8 +1,8 @@
 import { Document, Window } from "happy-dom";
 import { type Context } from "swooce";
-import { ContentModule, FactoryGlobModuleResolver } from "@swooce/core";
+import { ContentArtifact, FactoryGlobArtifactResolver } from "@swooce/core";
 
-class PostPageModule extends ContentModule<Document> {
+class PostPageArtifact extends ContentArtifact<Document> {
   override async fetch(_ctx: Context): Promise<Document> {
     const srcFileText = await (await fetch(this.srcFileURL)).text();
 
@@ -36,8 +36,8 @@ class PostPageModule extends ContentModule<Document> {
   }
 }
 
-export default FactoryGlobModuleResolver(
+export default FactoryGlobArtifactResolver(
   import.meta.url,
   "./post/*.md",
-  (url) => new PostPageModule(url),
+  (url) => new PostPageArtifact(url),
 );

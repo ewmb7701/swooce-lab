@@ -1,24 +1,24 @@
-import { ModuleResolver, type Context } from "swooce";
-import { ContentModule } from "@swooce/core";
-import { HelloSiteModule } from "@swooce/site-hello";
+import { ArtifactResolver, type Context } from "swooce";
+import { ContentArtifact } from "@swooce/core";
+import { HelloSiteArtifact } from "@swooce/site-hello";
 import type { Document } from "happy-dom";
-import PageModuleResolver from "./site/pages.ts";
-import StaticModuleResolver from "./site/public.ts";
+import PageArtifactResolver from "./site/pages.ts";
+import StaticArtifactResolver from "./site/public.ts";
 
-export default class extends ModuleResolver<HelloSiteModule> {
+export default class extends ArtifactResolver<HelloSiteArtifact> {
   override async resolve(ctx: Context) {
-    const pagesModuleResolver = new PageModuleResolver();
-    const allPageModule = (await pagesModuleResolver.resolve(ctx)) as Array<
-      ContentModule<Document>
+    const pagesArtifactResolver = new PageArtifactResolver();
+    const allPageArtifact = (await pagesArtifactResolver.resolve(ctx)) as Array<
+      ContentArtifact<Document>
     >;
 
-    const publicModuleResolver = new StaticModuleResolver();
-    const allAssetModule = await publicModuleResolver.resolve(ctx);
+    const publicArtifactResolver = new StaticArtifactResolver();
+    const allAssetArtifact = await publicArtifactResolver.resolve(ctx);
 
-    return new HelloSiteModule(
+    return new HelloSiteArtifact(
       new URL(import.meta.url),
-      allPageModule,
-      allAssetModule,
+      allPageArtifact,
+      allAssetArtifact,
     );
   }
 }

@@ -3,24 +3,20 @@ import { dirname } from "path";
 import { fileURLToPath } from "url";
 import type { Document } from "happy-dom";
 import type { Context } from "swooce";
-import { ContentModule, ContentModuleEmitter } from "@swooce/core";
+import { ContentArtifact, ContentArtifactEmitter } from "@swooce/core";
 
 /**
- * ContentModuleEmitter for modules whose content is a `Document`.
- * Automatically writes the document to its target file using outerHTML.
+ * {@link ContentArtifactEmitter} for artifacts with content of {@link Document}.
  */
-export class DocumentContentModuleEmitter extends ContentModuleEmitter<
-  ContentModule<Document>
+export class DocumentContentArtifactEmitter extends ContentArtifactEmitter<
+  ContentArtifact<Document>
 > {
-  /**
-   * Writes the content of the module to disk.
-   */
   protected async writeContent(
     ctx: Context,
-    module: ContentModule<Document>,
+    artifact: ContentArtifact<Document>,
     content: Document,
   ) {
-    const targetFileURL = ctx.paths.resolveModuleTargetFileURL(ctx, module);
+    const targetFileURL = ctx.paths.resolveArtifactTargetFileURL(ctx, artifact);
     const targetFilePath = fileURLToPath(targetFileURL);
     const targetDir = dirname(targetFilePath);
 

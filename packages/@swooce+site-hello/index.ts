@@ -8,13 +8,13 @@
 
 import { relative } from "path/posix";
 import type { Document } from "happy-dom";
-import { Module, ModuleEmitter, type Context } from "swooce";
+import { Artifact, ArtifactEmitter, type Context } from "swooce";
 import {
-  CopyModuleEmitter,
-  type ContentModule,
-  type VoidModule,
+  CopyArtifactEmitter,
+  type ContentArtifact,
+  type VoidArtifact,
 } from "@swooce/core";
-import { DocumentContentModuleEmitter } from "@swooce/happy-dom";
+import { DocumentContentArtifactEmitter } from "@swooce/happy-dom";
 
 function createHelloSiteContext(projectDirURL: URL): Context {
   const srcDirURL = new URL("./src/", projectDirURL);
@@ -25,32 +25,40 @@ function createHelloSiteContext(projectDirURL: URL): Context {
       /**
        * eg, `file:///home/eric/projects/my-cool-website/src/pages/posts/post-1.md` to `/posts/post-1.md.html`.
        */
-      resolveModuleRoute: function (
+      resolveArtifactRoute: function (
         ctx: Context,
-        moduleSrcFileURL: URL,
+        artifactSrcFileURL: URL,
       ): string {
-        const moduleSrcFileRelativeURLPath = `/${relative(
+        const artifactSrcFileRelativeURLPath = `/${relative(
           ctx.paths.srcDirURL.href,
-          moduleSrcFileURL.href,
+          artifactSrcFileURL.href,
         )}`;
 
-        if (moduleSrcFileRelativeURLPath.startsWith("/site/pages/")) {
-          return `${moduleSrcFileRelativeURLPath.slice(`/site/pages/`.length - 1)}.html`;
-        } else if (moduleSrcFileRelativeURLPath.startsWith("/site/public/")) {
-          return moduleSrcFileRelativeURLPath.slice("/site/public/".length - 1);
+        if (artifactSrcFileRelativeURLPath.startsWith("/site/pages/")) {
+          return `${artifactSrcFileRelativeURLPath.slice(`/site/pages/`.length - 1)}.html`;
+        } else if (artifactSrcFileRelativeURLPath.startsWith("/site/public/")) {
+          return artifactSrcFileRelativeURLPath.slice(
+            "/site/public/".length - 1,
+          );
         } else {
           throw new Error(
-            `Not supported! moduleSrcFileURL=${moduleSrcFileURL} moduleSrcFileRelativeURLPath=${moduleSrcFileRelativeURLPath}`,
+            `Not supported! artifactSrcFileURL=${artifactSrcFileURL} artifactSrcFileRelativeURLPath=${artifactSrcFileRelativeURLPath}`,
           );
         }
       },
       /**
        * eg, `file:///home/eric/projects/my-cool-website/src/pages/posts/post-1.md` to `file:///home/eric/projects/my-cool-website/target/pages/posts/post-1.md`.
        */
-      resolveModuleTargetFileURL: function (ctx: Context, module: Module): URL {
-        const moduleRoute = this.resolveModuleRoute(ctx, module.srcFileURL);
+      resolveArtifactTargetFileURL: function (
+        ctx: Context,
+        artifact: Artifact,
+      ): URL {
+        const artifactRoute = this.resolveArtifactRoute(
+          ctx,
+          artifact.srcFileURL,
+        );
 
-        return new URL(`.${moduleRoute}`, `${ctx.paths.targetDirURL}`);
+        return new URL(`.${artifactRoute}`, `${ctx.paths.targetDirURL}`);
       },
       srcDirURL: srcDirURL,
       targetDirURL: targetDirURL,
@@ -58,38 +66,38 @@ function createHelloSiteContext(projectDirURL: URL): Context {
   } satisfies Context;
 }
 
-class HelloSiteModule extends Module {
+class HelloSiteArtifact extends Artifact {
   /**
-   * Modules resolves from src/state/pages
+   * Artifacts resolves from src/state/pages
    */
-  readonly pageModule: Array<ContentModule<Document>>;
-  readonly staticModule: Array<VoidModule>;
+  readonly pageArtifact: Array<ContentArtifact<Document>>;
+  readonly publicArtifact: Array<VoidArtifact>;
 
   constructor(
     srcFileURL: URL,
-    pageModule: Array<ContentModule<Document>>,
-    staticModule: Array<VoidModule>,
+    pageArtifact: Array<ContentArtifact<Document>>,
+    publicArtifact: Array<VoidArtifact>,
   ) {
     super(srcFileURL);
-    this.pageModule = pageModule;
-    this.staticModule = staticModule;
+    this.pageArtifact = pageArtifact;
+    this.publicArtifact = publicArtifact;
   }
 }
 
-class HelloSiteEmitter extends ModuleEmitter<HelloSiteModule> {
+class HelloSiteEmitter extends ArtifactEmitter<HelloSiteArtifact> {
   /**
-   * Emit module content to output directory.
+   * Emit artifact content to output directory.
    * The emitted files are the final build artifacts.
    */
-  async emit(ctx: Context, site: HelloSiteModule): Promise<void> {
-    const pageModuleEmitter = new DocumentContentModuleEmitter();
-    for (const iPageModule of site.pageModule) {
-      pageModuleEmitter.emit(ctx, iPageModule);
+  async emit(ctx: Context, site: HelloSiteArtifact): Promise<void> {
+    const pageArtifactEmitter = new DocumentContentArtifactEmitter();
+    for (const iPageArtifact of site.pageArtifact) {
+      pageArtifactEmitter.emit(ctx, iPageArtifact);
     }
 
-    const staticModuleEmitter = new CopyModuleEmitter();
-    for (const iStaticModule of site.staticModule) {
-      staticModuleEmitter.emit(ctx, iStaticModule);
+    const publicArtifactEmitter = new CopyArtifactEmitter();
+    for (const iPublicArtifact of site.publicArtifact) {
+      publicArtifactEmitter.emit(ctx, iPublicArtifact);
     }
   }
 
@@ -98,4 +106,4 @@ class HelloSiteEmitter extends ModuleEmitter<HelloSiteModule> {
   }
 }
 
-export { HelloSiteModule, HelloSiteEmitter, createHelloSiteContext };
+export { HelloSiteArtifact, HelloSiteEmitter, createHelloSiteContext };

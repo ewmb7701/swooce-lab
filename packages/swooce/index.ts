@@ -1,9 +1,9 @@
 /**
- * {@link @swooce/core/VoidModule}
+ * Base artifact type.
  */
-abstract class Module {
+abstract class Artifact {
   /**
-   * Absolute URL of the source file of this module.
+   * Absolute URL of the source file of this artifact.
    *
    * eg,`/home/eric/projects/my-cool-website/src/document/posts/reasons-im-cool.md`
    */
@@ -33,20 +33,20 @@ interface ContextPaths {
   readonly targetDirURL: URL;
 
   /**
-   * Resolve the route of a module using the module src file URL.
+   * Resolve the route of an artifact using the artifact src file URL.
    */
-  resolveModuleRoute: (ctx: Context, moduleSrcFileURL: URL) => string;
+  resolveArtifactRoute: (ctx: Context, artifactSrcFileURL: URL) => string;
 
   /**
-   * Resolve the absolute target URL of a module.
+   * Resolve the absolute target URL of an artifact.
    *
    * eg, resolves `file:///home/eric/projects/my-cool-website/src/document/posts/post-1.md` to `file:///home/eric/projects/my-cool-website/target/document/posts/post-1.md`.
    */
-  resolveModuleTargetFileURL: (ctx: Context, module: Module) => URL;
+  resolveArtifactTargetFileURL: (ctx: Context, artifact: Artifact) => URL;
 }
 
 /**
- * Site-wide context shared between all modules, like project paths and resolvers.
+ * Site-wide context shared between all artifacts, like project paths and resolvers.
  *
  * Provided to all primitives.
  */
@@ -54,25 +54,25 @@ interface Context {
   readonly paths: ContextPaths;
 }
 
-abstract class ModuleEmitter<TModule extends Module> {
+abstract class ArtifactEmitter<TArtifact extends Artifact> {
   /**
    * Emit site files to target directory.
    * The emitted public site files are the final build artifacts.
    */
-  abstract emit(ctx: Context, module: TModule): Promise<void>;
+  abstract emit(ctx: Context, artifact: TArtifact): Promise<void>;
 }
 
-abstract class ModuleResolver<TModule extends Module> {
+abstract class ArtifactResolver<TArtifact extends Artifact> {
   /**
    * Returns an array.
    */
-  abstract resolve(ctx: Context): Promise<TModule | Array<TModule>>;
+  abstract resolve(ctx: Context): Promise<TArtifact | Array<TArtifact>>;
 }
 
 export {
-  Module,
-  ModuleResolver,
-  ModuleEmitter,
+  Artifact,
+  ArtifactResolver,
+  ArtifactEmitter,
   type Context,
   type ContextPaths,
 };

@@ -8,5 +8,5 @@ Swooce primitives for building a "hello" website.
 
 The pipeline,
 
-- `ContentModule<Document>` in "/src/site/pages/\*" will be emit to "/target/\*.html" building.
-- `VoidModule` in "/src/site/public"` will be emit to "/target/public/\*" via copy.
+- `ContentArtifact<Document>` in "/src/site/pages/\*" will be emit to "/target/\*.html" building.
+- `VoidArtifact` in "/src/site/public"` will be emit to "/target/public/\*" via filesystem copy.

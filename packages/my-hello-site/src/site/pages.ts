@@ -1,3 +1,3 @@
-import { MetaGlobModuleResolver } from "@swooce/core";
+import { ImportGlobArtifactResolver } from "@swooce/core";
 
-export default MetaGlobModuleResolver(import.meta.url, "./pages/*.ts");
+export default ImportGlobArtifactResolver(import.meta.url, "./pages/*.ts");

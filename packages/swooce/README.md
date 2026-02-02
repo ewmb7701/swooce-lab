@@ -8,13 +8,13 @@
 
 # Concepts
 
-## Module
+## Artifact
 
 First-class site object that will be emit. eg, a page or an asset.
 
-## ModuleEmitter
+## ArtifactEmitter
 
-Emits a file for the module to the target directory.
+Emits a file for the artifact to the target directory.
 
 # Patterns
 

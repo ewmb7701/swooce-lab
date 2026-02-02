@@ -1,7 +1,7 @@
-import { FactoryGlobModuleResolver, VoidModule } from "@swooce/core";
+import { FactoryGlobArtifactResolver, VoidArtifact } from "@swooce/core";
 
-export default FactoryGlobModuleResolver(
+export default FactoryGlobArtifactResolver(
   import.meta.url,
-  "./public/*.{png,svg}",
-  (moduleSrcFileURL) => new VoidModule(moduleSrcFileURL),
+  "./public/*",
+  (artifactSrcFileURL) => new VoidArtifact(artifactSrcFileURL),
 );

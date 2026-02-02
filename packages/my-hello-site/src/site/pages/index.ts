@@ -1,8 +1,8 @@
 import { Document, Window } from "happy-dom";
-import { ModuleResolver, type Context } from "swooce";
-import { ContentModule } from "@swooce/core";
+import { ArtifactResolver, type Context } from "swooce";
+import { ContentArtifact } from "@swooce/core";
 
-class IndexPageModule extends ContentModule<Document> {
+class IndexPageArtifact extends ContentArtifact<Document> {
   override async fetch(_ctx: Context) {
     const window = new Window();
     const document = window.document;
@@ -33,8 +33,8 @@ class IndexPageModule extends ContentModule<Document> {
   }
 }
 
-export default class extends ModuleResolver<IndexPageModule> {
+export default class extends ArtifactResolver<IndexPageArtifact> {
   override resolve(_ctx: Context) {
-    return Promise.resolve(new IndexPageModule(new URL(import.meta.url)));
+    return Promise.resolve(new IndexPageArtifact(new URL(import.meta.url)));
   }
 }

@@ -1,48 +1,65 @@
 import { glob } from "glob";
 import { copyFile } from "node:fs/promises";
 import { dirname } from "node:path/posix";
-import { Module, ModuleEmitter, ModuleResolver, type Context } from "swooce";
+import {
+  Artifact,
+  ArtifactEmitter,
+  ArtifactResolver,
+  type Context,
+} from "swooce";
 
 /**
- * Module without any content.
+ * Artifact without any content.
  *
- * Useful for eg, an asset file. Useful when paired with {@link CopyModuleEmitter}.
+ * Useful for eg, an asset file. Useful when paired with {@link CopyArtifactEmitter}.
  */
-export class VoidModule extends Module {}
+export class VoidArtifact extends Artifact {}
 
 /**
- * Module with content.
+ * Artifact with content.
  */
-export abstract class ContentModule<TContent> extends Module {
+export abstract class ContentArtifact<TContent> extends Artifact {
   /**
-   * Fetch the content of the src file of this module.
+   * Fetch the content of the src file of this artifact.
    */
   abstract fetch(ctx: Context): Promise<TContent>;
 }
 
 /**
- * Creates a module resolver which resolves modules via matching files for a module factory.
+ * Creates an artifact resolver which resolves artifacts from matching files using a given factory.
  *
  * # Example usage:
  *
- * ## Import all src/post/*.md pages from src/post.ts
+ * ## asset folder
  * ```ts
- * // src/site/page/post.ts
- * export default FactoryGlobModuleResolver(
- *   import.meta.url, // resolver file URL
- *     "*.md", // glob pattern to match all post markdowns
- *     (url) => new PostPageModule(url), // factory for each matched file
- *   );
+ * export default FactoryGlobArtifactResolver(
+ *   import.meta.url,
+ *   "./public/*",
+ *   (artifactSrcFileURL) => new VoidArtifact(artifactSrcFileURL),
+ * );
+ *
  * ```
  *
- * @param resolverImportMetaURL `import.meta.url` of the resolver. ie, the `import.meta.url` from the esmodule that called this.
+ * ## dynamic routing
+ * ```ts
+ * // src/site/page/post.ts
+ *
+ * // from this src/site/post.ts module, we resolve all src/site/post/*.md as PostPageArtifact
+ * export default FactoryGlobArtifactResolver(
+ *   import.meta.url,
+ *   "./post/*.md",
+ *   (url) => new PostPageArtifact(url),
+ * );
+ * ```
+ *
+ * @param resolverImportMetaURL `import.meta.url` of the resolver. ie, the `import.meta.url` from the esm file that called this.
  */
-export function FactoryGlobModuleResolver<T extends Module>(
+export function FactoryGlobArtifactResolver<T extends Artifact>(
   resolverImportMetaURL: string,
   pattern: string,
-  moduleFactory: (moduleSrcFileURL: URL) => T,
+  artifactFactory: (artifactSrcFileURL: URL) => T,
 ) {
-  return class extends ModuleResolver<T> {
+  return class extends ArtifactResolver<T> {
     override async resolve(_ctx: any): Promise<T[]> {
       const resolverImportMetaDir = `${dirname(resolverImportMetaURL)}/`;
 
@@ -53,33 +70,37 @@ export function FactoryGlobModuleResolver<T extends Module>(
         dotRelative: true,
       });
 
-      // Map each match into a module using the factory
+      // Map each match into an artifact using the factory
       return matches.map((relativePath) =>
-        moduleFactory(new URL(relativePath, resolverImportMetaURL)),
+        artifactFactory(new URL(relativePath, resolverImportMetaURL)),
       );
     }
   };
 }
 
 /**
- * Creates a module resolver which resolves modules via matching files as module resolvers.
+ * Creates an artifact resolver which resolves artifacts from matching esm files as artifact resolvers using `import`.
+ *
+ * ie, resolves artifacts using matching files via dynamic import of ES modules whose default export is an artifact resolver.
  *
  * # Example usage:
  *
- * ## Import all .png and .svg images in sidecar dir
+ * ## Dynamic routing
  * ```ts
- * // src/public/images.ts
- * export default sidecarDirBarrelModuleResolver(import.meta.url, "*.{png,svg});
+ * // src/site/pages.ts
+ *
+ * // from this src/site/pages.ts, we import all src/site/pages/*.ts as artifact resolvers,m
+ * export default ImportGlobArtifactResolver(import.meta.url, "./pages/*.ts");
  * ```
  *
- * @param resolverImportMetaURL `import.meta.url` of the resolver. ie, the `import.meta.url` from the esmodule that called this.
+ * @param resolverImportMetaURL `import.meta.url` of the resolver. ie, the `import.meta.url` from the esm file that called this.
  */
-export function MetaGlobModuleResolver(
+export function ImportGlobArtifactResolver(
   resolverImportMetaURL: string,
   pattern: string,
 ) {
-  return class extends ModuleResolver<Module> {
-    override async resolve(ctx: Context): Promise<Module[]> {
+  return class extends ArtifactResolver<Artifact> {
+    override async resolve(ctx: Context): Promise<Artifact[]> {
       const resolverImportMetaDir = `${dirname(resolverImportMetaURL)}/`;
 
       const matches = await glob(pattern, {
@@ -88,39 +109,49 @@ export function MetaGlobModuleResolver(
         posix: true,
       });
 
-      const modules: Module[] = [];
-
+      const artifacts: Artifact[] = [];
       for (const relativePath of matches) {
-        const fileURL = new URL(relativePath, resolverImportMetaDir);
+        const artifactResolverModuleFileURL = new URL(
+          relativePath,
+          resolverImportMetaDir,
+        );
 
-        // Dynamic import
-        const imported = await import(fileURL.href);
-        const ResolverClass =
-          imported.default as new () => ModuleResolver<Module>;
-        const resolverInstance = new ResolverClass();
+        // import artifact resolver module
+        const artifactResolverModule = await import(
+          artifactResolverModuleFileURL.href
+        );
+        const DynamicArtifactResolver =
+          artifactResolverModule.default as new () => ArtifactResolver<Artifact>;
+        const resolverInstance = new DynamicArtifactResolver();
 
-        // Resolve and collect modules
+        // Resolve and collect artifacts
         const resolved = await resolverInstance.resolve(ctx);
         if (Array.isArray(resolved)) {
-          modules.push(...resolved);
+          artifacts.push(...resolved);
         } else {
-          modules.push(resolved);
+          artifacts.push(resolved);
         }
       }
 
-      return modules;
+      return artifacts;
     }
   };
 }
 
 /**
- * Base class for emitting content modules.
- * Handles fetch -> transform -> write.
+ * Base class which emits content artifacts.
+ * Implements `emit` as fetch -> transform -> write.
+ *
+ * # Usage
+ * ```typescript
+ * export default class extends
+ *
+ * ```
  */
-export abstract class ContentModuleEmitter<
-  TContentModule extends ContentModule<TContnet>,
+export abstract class ContentArtifactEmitter<
+  TContentArtifact extends ContentArtifact<TContnet>,
   TContnet = unknown,
-> extends ModuleEmitter<TContentModule> {
+> extends ArtifactEmitter<TContentArtifact> {
   /**
    * Optionally transform the fetched content before writing.
    * Override this in subclasses to apply minification, bundling, etc.
@@ -128,49 +159,52 @@ export abstract class ContentModuleEmitter<
   async transform(
     _ctx: Context,
     content: TContnet,
-    _module: TContentModule,
+    _artifact: TContentArtifact,
   ): Promise<TContnet> {
     return content; // default: no-op
   }
 
   /**
-   * Writes the transformed content to disk at the resolved target URL.
+   * Writes the transformed content of the artifact to the disk at the resolved target URL.
    */
   protected abstract writeContent(
     ctx: Context,
-    module: TContentModule,
+    artifact: TContentArtifact,
     targetContent: TContnet,
   ): Promise<void>;
 
-  /**
-   * Emit a single module: fetch -> transform -> write
-   */
-  async emit(ctx: Context, module: TContentModule): Promise<void> {
-    console.log(`ContentModuleEmitter will emit module ${module.srcFileURL}`);
+  async emit(ctx: Context, artifact: TContentArtifact): Promise<void> {
+    console.log(
+      `ContentArtifactEmitter will emit artifact ${artifact.srcFileURL}`,
+    );
 
-    const srcContent = await module.fetch(ctx);
-    const targetContent = await this.transform(ctx, srcContent, module);
-    await this.writeContent(ctx, module, targetContent);
+    const srcContent = await artifact.fetch(ctx);
+    const targetContent = await this.transform(ctx, srcContent, artifact);
+    await this.writeContent(ctx, artifact, targetContent);
 
-    console.log(`ContentModuleEmitter did emit module ${module.srcFileURL}`);
+    console.log(
+      `ContentArtifactEmitter did emit artifact ${artifact.srcFileURL}`,
+    );
   }
 }
 
 /**
- * Module emitter which copies the module src file to its target file path.
+ * Artifact emitter which copies the artifact src file to its target file path.
  *
  * The target file path is resolved using {@link Context}.
  */
-export class CopyModuleEmitter extends ModuleEmitter<Module> {
-  async emit(ctx: Context, module: Module): Promise<void> {
-    console.log(`CopyModuleEmitter will emit module ${module.srcFileURL}`);
+export class CopyArtifactEmitter extends ArtifactEmitter<Artifact> {
+  async emit(ctx: Context, artifact: Artifact): Promise<void> {
+    console.log(
+      `CopyArtifactEmitter will emit artifact ${artifact.srcFileURL}`,
+    );
 
-    const targetFileURL = ctx.paths.resolveModuleTargetFileURL(ctx, module);
+    const targetFileURL = ctx.paths.resolveArtifactTargetFileURL(ctx, artifact);
 
-    await copyFile(module.srcFileURL, targetFileURL);
+    await copyFile(artifact.srcFileURL, targetFileURL);
 
     console.log(
-      `CopyModuleEmitter did emit module ${module.srcFileURL} -> ${targetFileURL}`,
+      `CopyArtifactEmitter did emit artifact ${artifact.srcFileURL} -> ${targetFileURL}`,
     );
   }
 

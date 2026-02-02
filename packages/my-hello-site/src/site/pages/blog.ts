@@ -1,18 +1,18 @@
 import { Document, Window as DOMWindow } from "happy-dom";
-import { ModuleResolver, type Context } from "swooce";
-import { ContentModule } from "@swooce/core";
+import { ArtifactResolver, type Context } from "swooce";
+import { ContentArtifact } from "@swooce/core";
 import { glob } from "glob";
 
-class BlogPageModule extends ContentModule<Document> {
-  readonly allPostPageModuleSrcURL: URL[];
+class BlogPageArtifact extends ContentArtifact<Document> {
+  readonly allPostPageArtifactSrcURL: URL[];
 
   override async fetch(ctx: Context): Promise<Document> {
     // create document content
     const documentContentAllPostPageHTMLListItems =
-      this.allPostPageModuleSrcURL.map((iModuleSrcFileURL) => {
-        const iDocumentRoute = ctx.paths.resolveModuleRoute(
+      this.allPostPageArtifactSrcURL.map((iArtifactSrcFileURL) => {
+        const iDocumentRoute = ctx.paths.resolveArtifactRoute(
           ctx,
-          iModuleSrcFileURL,
+          iArtifactSrcFileURL,
         );
 
         return `<li><a href="${iDocumentRoute}">${iDocumentRoute}</a></li>`;
@@ -42,29 +42,29 @@ class BlogPageModule extends ContentModule<Document> {
     return document;
   }
 
-  constructor(srcFileURL: URL, allPostPageModuleSrcURL: URL[]) {
+  constructor(srcFileURL: URL, allPostPageArtifactSrcURL: URL[]) {
     super(srcFileURL);
-    this.allPostPageModuleSrcURL = allPostPageModuleSrcURL;
+    this.allPostPageArtifactSrcURL = allPostPageArtifactSrcURL;
   }
 }
 
-export default class extends ModuleResolver<BlogPageModule> {
+export default class extends ArtifactResolver<BlogPageArtifact> {
   override async resolve(_ctx: Context) {
-    // resolve module dependencies
-    const allPostModuleSrcFileRelativePath = await glob(`./post/*.md`, {
+    // resolve artifact dependencies
+    const allPostArtifactSrcFileRelativePath = await glob(`./post/*.md`, {
       cwd: import.meta.dir,
       posix: true,
       dotRelative: true,
     });
 
-    const allPostModuleSrcFileRelativeURL =
-      allPostModuleSrcFileRelativePath.map((iPostPageSrcFileRelativePath) => {
+    const allPostArtifactSrcFileRelativeURL =
+      allPostArtifactSrcFileRelativePath.map((iPostPageSrcFileRelativePath) => {
         return new URL(import.meta.resolve(iPostPageSrcFileRelativePath));
       });
 
-    return new BlogPageModule(
+    return new BlogPageArtifact(
       new URL(import.meta.url),
-      allPostModuleSrcFileRelativeURL,
+      allPostArtifactSrcFileRelativeURL,
     );
   }
 }
