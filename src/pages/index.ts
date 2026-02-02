@@ -1,7 +1,7 @@
 import { Document, Window } from "happy-dom";
 import { ContentModule, ModuleResolver, type API } from "#swooce";
 
-class IndexDocumentModule extends ContentModule<Document> {
+class IndexPageModule extends ContentModule<Document> {
   override async fetch(_api: API) {
     const window = new Window();
     const document = window.document;
@@ -26,8 +26,8 @@ class IndexDocumentModule extends ContentModule<Document> {
   }
 }
 
-export default class extends ModuleResolver<IndexDocumentModule> {
+export default class extends ModuleResolver<IndexPageModule> {
   override resolve(_api: API) {
-    return Promise.resolve(new IndexDocumentModule(new URL(import.meta.url)));
+    return Promise.resolve(new IndexPageModule(new URL(import.meta.url)));
   }
 }
