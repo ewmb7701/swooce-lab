@@ -2,7 +2,7 @@ import { writeFile, mkdir } from "fs/promises";
 import { dirname } from "path";
 import { fileURLToPath } from "url";
 import type { Document } from "happy-dom";
-import type { Context } from "swooce";
+import type { PipelineContext } from "swooce";
 import { ContentArtifact, ContentArtifactEmitter } from "@swooce/core";
 
 /**
@@ -12,7 +12,7 @@ export class DocumentContentArtifactEmitter extends ContentArtifactEmitter<
   ContentArtifact<Document>
 > {
   protected async writeContent(
-    ctx: Context,
+    ctx: PipelineContext,
     artifact: ContentArtifact<Document>,
     content: Document,
   ) {

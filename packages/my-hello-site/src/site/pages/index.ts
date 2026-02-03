@@ -1,9 +1,9 @@
 import { Document, Window } from "happy-dom";
-import { ArtifactResolver, type Context } from "swooce";
+import { ArtifactResolver, type PipelineContext } from "swooce";
 import { ContentArtifact } from "@swooce/core";
 
 class IndexPageArtifact extends ContentArtifact<Document> {
-  override async fetch(_ctx: Context) {
+  override async fetch(_ctx: PipelineContext) {
     const window = new Window();
     const document = window.document;
     const documentHTML = `
@@ -34,7 +34,7 @@ class IndexPageArtifact extends ContentArtifact<Document> {
 }
 
 export default class extends ArtifactResolver<IndexPageArtifact> {
-  override resolve(_ctx: Context) {
+  override resolve(_ctx: PipelineContext) {
     return Promise.resolve(new IndexPageArtifact(new URL(import.meta.url)));
   }
 }

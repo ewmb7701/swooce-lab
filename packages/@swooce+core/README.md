@@ -7,10 +7,10 @@ Core `swooce` primitives for producing a website.
 ```typescript
 // src/site/pages.ts
 
-import { ImportGlobArtifactResolver } from "@swooce/core";
+import { DyamicGlobArtifactResolver } from "@swooce/core";
 
 // we resolve artifacts via dynamic import of ES modules with a default export of artifact resolvers
-export default ImportGlobArtifactResolver(import.meta.url, "./pages/*.ts");
+export default DyamicGlobArtifactResolver(import.meta.url, "./pages/*.ts");
 ```
 
 ## Artifact resolver as default export

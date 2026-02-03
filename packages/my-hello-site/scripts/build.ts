@@ -1,9 +1,12 @@
 import { mkdir, rm } from "fs/promises";
-import { HelloSiteEmitter, createHelloSiteContext } from "@swooce/site-hello";
+import {
+  HelloSiteEmitter,
+  createHelloSitePipelineContext,
+} from "@swooce/site-hello";
 
 import MySiteArtifactResolver from "../src/site.ts";
 
-const ctx = createHelloSiteContext(new URL("../", import.meta.url));
+const ctx = createHelloSitePipelineContext(new URL("../", import.meta.url));
 
 // create site
 const mySiteArtifactResolver = new MySiteArtifactResolver();

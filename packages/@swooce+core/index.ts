@@ -5,7 +5,7 @@ import {
   Artifact,
   ArtifactEmitter,
   ArtifactResolver,
-  type Context,
+  type PipelineContext,
 } from "swooce";
 
 /**
@@ -22,7 +22,7 @@ export abstract class ContentArtifact<TContent> extends Artifact {
   /**
    * Fetch the content of the src file of this artifact.
    */
-  abstract fetch(ctx: Context): Promise<TContent>;
+  abstract fetch(ctx: PipelineContext): Promise<TContent>;
 }
 
 /**
@@ -40,7 +40,7 @@ export abstract class ContentArtifact<TContent> extends Artifact {
  *
  * ```
  *
- * ## dynamic routing
+ * ## Dynamic routing
  * ```ts
  * // src/site/page/post.ts
  *
@@ -79,28 +79,28 @@ export function FactoryGlobArtifactResolver<T extends Artifact>(
 }
 
 /**
- * Creates an artifact resolver which resolves artifacts from matching esm files as artifact resolvers using `import`.
+ * Creates an artifact resolver which resolves artifacts from matching files via dynamic import.
  *
- * ie, resolves artifacts using matching files via dynamic import of ES modules whose default export is an artifact resolver.
+ * The matching files must be ES modules with an artifact resolver as the default export.
  *
  * # Example usage:
  *
- * ## Dynamic routing
+ * ## Directory sidecar barrel
  * ```ts
  * // src/site/pages.ts
  *
- * // from this src/site/pages.ts, we import all src/site/pages/*.ts as artifact resolvers,m
- * export default ImportGlobArtifactResolver(import.meta.url, "./pages/*.ts");
+ * // from this src/site/pages.ts module, we resolve modules via dynamic import of all src/site/pages/*.ts modules as artifact resolvers
+ * export default DyamicGlobArtifactResolver(import.meta.url, "./pages/*.ts");
  * ```
  *
  * @param resolverImportMetaURL `import.meta.url` of the resolver. ie, the `import.meta.url` from the esm file that called this.
  */
-export function ImportGlobArtifactResolver(
+export function DyamicGlobArtifactResolver(
   resolverImportMetaURL: string,
   pattern: string,
 ) {
   return class extends ArtifactResolver<Artifact> {
-    override async resolve(ctx: Context): Promise<Artifact[]> {
+    override async resolve(ctx: PipelineContext): Promise<Artifact[]> {
       const resolverImportMetaDir = `${dirname(resolverImportMetaURL)}/`;
 
       const matches = await glob(pattern, {
@@ -109,7 +109,7 @@ export function ImportGlobArtifactResolver(
         posix: true,
       });
 
-      const artifacts: Artifact[] = [];
+      const artifact: Artifact[] = [];
       for (const relativePath of matches) {
         const artifactResolverModuleFileURL = new URL(
           relativePath,
@@ -122,18 +122,19 @@ export function ImportGlobArtifactResolver(
         );
         const DynamicArtifactResolver =
           artifactResolverModule.default as new () => ArtifactResolver<Artifact>;
-        const resolverInstance = new DynamicArtifactResolver();
+        const dynamicArtifactResolverInstance = new DynamicArtifactResolver();
 
         // Resolve and collect artifacts
-        const resolved = await resolverInstance.resolve(ctx);
-        if (Array.isArray(resolved)) {
-          artifacts.push(...resolved);
+        const resolvedArtifact =
+          await dynamicArtifactResolverInstance.resolve(ctx);
+        if (Array.isArray(resolvedArtifact)) {
+          artifact.push(...resolvedArtifact);
         } else {
-          artifacts.push(resolved);
+          artifact.push(resolvedArtifact);
         }
       }
 
-      return artifacts;
+      return artifact;
     }
   };
 }
@@ -157,7 +158,7 @@ export abstract class ContentArtifactEmitter<
    * Override this in subclasses to apply minification, bundling, etc.
    */
   async transform(
-    _ctx: Context,
+    _ctx: PipelineContext,
     content: TContnet,
     _artifact: TContentArtifact,
   ): Promise<TContnet> {
@@ -168,12 +169,12 @@ export abstract class ContentArtifactEmitter<
    * Writes the transformed content of the artifact to the disk at the resolved target URL.
    */
   protected abstract writeContent(
-    ctx: Context,
+    ctx: PipelineContext,
     artifact: TContentArtifact,
     targetContent: TContnet,
   ): Promise<void>;
 
-  async emit(ctx: Context, artifact: TContentArtifact): Promise<void> {
+  async emit(ctx: PipelineContext, artifact: TContentArtifact): Promise<void> {
     console.log(
       `ContentArtifactEmitter will emit artifact ${artifact.srcFileURL}`,
     );
@@ -191,10 +192,10 @@ export abstract class ContentArtifactEmitter<
 /**
  * Artifact emitter which copies the artifact src file to its target file path.
  *
- * The target file path is resolved using {@link Context}.
+ * The target file path is resolved using {@link PipelineContext}.
  */
 export class CopyArtifactEmitter extends ArtifactEmitter<Artifact> {
-  async emit(ctx: Context, artifact: Artifact): Promise<void> {
+  async emit(ctx: PipelineContext, artifact: Artifact): Promise<void> {
     console.log(
       `CopyArtifactEmitter will emit artifact ${artifact.srcFileURL}`,
     );

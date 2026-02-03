@@ -8,7 +8,7 @@
 
 import { relative } from "path/posix";
 import type { Document } from "happy-dom";
-import { Artifact, ArtifactEmitter, type Context } from "swooce";
+import { Artifact, ArtifactEmitter, type PipelineContext } from "swooce";
 import {
   CopyArtifactEmitter,
   type ContentArtifact,
@@ -16,7 +16,7 @@ import {
 } from "@swooce/core";
 import { DocumentContentArtifactEmitter } from "@swooce/happy-dom";
 
-function createHelloSiteContext(projectDirURL: URL): Context {
+function createHelloSitePipelineContext(projectDirURL: URL): PipelineContext {
   const srcDirURL = new URL("./src/", projectDirURL);
   const targetDirURL = new URL("./target/", projectDirURL);
 
@@ -26,7 +26,7 @@ function createHelloSiteContext(projectDirURL: URL): Context {
        * eg, `file:///home/eric/projects/my-cool-website/src/pages/posts/post-1.md` to `/posts/post-1.md.html`.
        */
       resolveArtifactRoute: function (
-        ctx: Context,
+        ctx: PipelineContext,
         artifactSrcFileURL: URL,
       ): string {
         const artifactSrcFileRelativeURLPath = `/${relative(
@@ -50,7 +50,7 @@ function createHelloSiteContext(projectDirURL: URL): Context {
        * eg, `file:///home/eric/projects/my-cool-website/src/pages/posts/post-1.md` to `file:///home/eric/projects/my-cool-website/target/pages/posts/post-1.md`.
        */
       resolveArtifactTargetFileURL: function (
-        ctx: Context,
+        ctx: PipelineContext,
         artifact: Artifact,
       ): URL {
         const artifactRoute = this.resolveArtifactRoute(
@@ -63,7 +63,7 @@ function createHelloSiteContext(projectDirURL: URL): Context {
       srcDirURL: srcDirURL,
       targetDirURL: targetDirURL,
     },
-  } satisfies Context;
+  } satisfies PipelineContext;
 }
 
 class HelloSiteArtifact extends Artifact {
@@ -89,7 +89,7 @@ class HelloSiteEmitter extends ArtifactEmitter<HelloSiteArtifact> {
    * Emit artifact content to output directory.
    * The emitted files are the final build artifacts.
    */
-  async emit(ctx: Context, site: HelloSiteArtifact): Promise<void> {
+  async emit(ctx: PipelineContext, site: HelloSiteArtifact): Promise<void> {
     const pageArtifactEmitter = new DocumentContentArtifactEmitter();
     for (const iPageArtifact of site.pageArtifact) {
       pageArtifactEmitter.emit(ctx, iPageArtifact);
@@ -106,4 +106,4 @@ class HelloSiteEmitter extends ArtifactEmitter<HelloSiteArtifact> {
   }
 }
 
-export { HelloSiteArtifact, HelloSiteEmitter, createHelloSiteContext };
+export { HelloSiteArtifact, HelloSiteEmitter, createHelloSitePipelineContext };

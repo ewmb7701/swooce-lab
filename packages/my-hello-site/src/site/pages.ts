@@ -1,3 +1,3 @@
-import { ImportGlobArtifactResolver } from "@swooce/core";
+import { DyamicGlobArtifactResolver } from "@swooce/core";
 
-export default ImportGlobArtifactResolver(import.meta.url, "./pages/*.ts");
+export default DyamicGlobArtifactResolver(import.meta.url, "./pages/*.ts");

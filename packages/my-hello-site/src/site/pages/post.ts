@@ -1,9 +1,9 @@
 import { Document, Window } from "happy-dom";
-import { type Context } from "swooce";
+import { type PipelineContext } from "swooce";
 import { ContentArtifact, FactoryGlobArtifactResolver } from "@swooce/core";
 
 class PostPageArtifact extends ContentArtifact<Document> {
-  override async fetch(_ctx: Context): Promise<Document> {
+  override async fetch(_ctx: PipelineContext): Promise<Document> {
     const srcFileText = await (await fetch(this.srcFileURL)).text();
 
     // create document content

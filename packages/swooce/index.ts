@@ -14,7 +14,7 @@ abstract class Artifact {
   }
 }
 
-interface ContextPaths {
+interface PipelineContextPaths {
   /**
    * The absolute URL of the site source directory.
    *
@@ -35,23 +35,29 @@ interface ContextPaths {
   /**
    * Resolve the route of an artifact using the artifact src file URL.
    */
-  resolveArtifactRoute: (ctx: Context, artifactSrcFileURL: URL) => string;
+  resolveArtifactRoute: (
+    ctx: PipelineContext,
+    artifactSrcFileURL: URL,
+  ) => string;
 
   /**
    * Resolve the absolute target URL of an artifact.
    *
    * eg, resolves `file:///home/eric/projects/my-cool-website/src/document/posts/post-1.md` to `file:///home/eric/projects/my-cool-website/target/document/posts/post-1.md`.
    */
-  resolveArtifactTargetFileURL: (ctx: Context, artifact: Artifact) => URL;
+  resolveArtifactTargetFileURL: (
+    ctx: PipelineContext,
+    artifact: Artifact,
+  ) => URL;
 }
 
 /**
- * Site-wide context shared between all artifacts, like project paths and resolvers.
+ * Site-wide pipelinecontext shared between all artifacts, like project paths and resolvers.
  *
  * Provided to all primitives.
  */
-interface Context {
-  readonly paths: ContextPaths;
+interface PipelineContext {
+  readonly paths: PipelineContextPaths;
 }
 
 abstract class ArtifactEmitter<TArtifact extends Artifact> {
@@ -59,20 +65,20 @@ abstract class ArtifactEmitter<TArtifact extends Artifact> {
    * Emit site files to target directory.
    * The emitted public site files are the final build artifacts.
    */
-  abstract emit(ctx: Context, artifact: TArtifact): Promise<void>;
+  abstract emit(ctx: PipelineContext, artifact: TArtifact): Promise<void>;
 }
 
 abstract class ArtifactResolver<TArtifact extends Artifact> {
   /**
    * Returns an array.
    */
-  abstract resolve(ctx: Context): Promise<TArtifact | Array<TArtifact>>;
+  abstract resolve(ctx: PipelineContext): Promise<TArtifact | Array<TArtifact>>;
 }
 
 export {
   Artifact,
   ArtifactResolver,
   ArtifactEmitter,
-  type Context,
-  type ContextPaths,
+  type PipelineContext,
+  type PipelineContextPaths,
 };

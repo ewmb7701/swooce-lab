@@ -1,12 +1,12 @@
 import { Document, Window as DOMWindow } from "happy-dom";
-import { ArtifactResolver, type Context } from "swooce";
+import { ArtifactResolver, type PipelineContext } from "swooce";
 import { ContentArtifact } from "@swooce/core";
 import { glob } from "glob";
 
 class BlogPageArtifact extends ContentArtifact<Document> {
   readonly allPostPageArtifactSrcURL: URL[];
 
-  override async fetch(ctx: Context): Promise<Document> {
+  override async fetch(ctx: PipelineContext): Promise<Document> {
     // create document content
     const documentContentAllPostPageHTMLListItems =
       this.allPostPageArtifactSrcURL.map((iArtifactSrcFileURL) => {
@@ -49,7 +49,7 @@ class BlogPageArtifact extends ContentArtifact<Document> {
 }
 
 export default class extends ArtifactResolver<BlogPageArtifact> {
-  override async resolve(_ctx: Context) {
+  override async resolve(_ctx: PipelineContext) {
     // resolve artifact dependencies
     const allPostArtifactSrcFileRelativePath = await glob(`./post/*.md`, {
       cwd: import.meta.dir,
