@@ -1,6 +1,5 @@
 {
-  "name": "@swooce/happy-dom",
-  "module": "index.ts",
+  "name": "my-showcase-site",
   "type": "module",
   "private": true,
   "devDependencies": {
@@ -14,5 +13,9 @@
     "happy-dom": "^20.4.0",
     "swooce": "workspace:*",
     "@swooce/core": "workspace:*"
+  },
+  "scripts": {
+    "build": "bun run ./scripts/build.ts",
+    "preview": "bunx http-server ./target/"
   }
 }

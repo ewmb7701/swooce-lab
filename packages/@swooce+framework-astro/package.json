@@ -1,5 +1,5 @@
 {
-  "name": "@swooce/site-hello",
+  "name": "@swooce/framework-astro",
   "module": "index.ts",
   "type": "module",
   "private": true,
@@ -10,8 +10,8 @@
     "typescript": "^5"
   },
   "dependencies": {
-    "swooce": "workspace:*",
     "@swooce/core": "workspace:*",
-    "@swooce/happy-dom": "workspace:*"
+    "happy-dom": "^20.5.0",
+    "swooce": "workspace:*"
   }
 }

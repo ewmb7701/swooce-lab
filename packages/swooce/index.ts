@@ -1,7 +1,4 @@
-/**
- * Base artifact type.
- */
-abstract class Artifact {
+class Artifact {
   /**
    * Absolute URL of the source file of this artifact.
    *
@@ -14,7 +11,19 @@ abstract class Artifact {
   }
 }
 
-interface PipelineContextPaths {
+/**
+ * Site-wide context shared between all primitives, like project paths and resolvers.
+ *
+ * Provided to all primitives.
+ */
+interface PipelineContext {
+  /**
+   * The absolute URL of the site project directory.
+   *
+   * eg, "file:///home/eric/projects/my-cool-website/"
+   */
+  readonly projectDirURL: URL;
+
   /**
    * The absolute URL of the site source directory.
    *
@@ -33,34 +42,21 @@ interface PipelineContextPaths {
   readonly targetDirURL: URL;
 
   /**
-   * Resolve the route of an artifact using the artifact src file URL.
+   * Get the route of an artifact using the artifact src file URL.
    */
-  resolveArtifactRoute: (
-    ctx: PipelineContext,
-    artifactSrcFileURL: URL,
-  ) => string;
+  getArtifactRoute: (ctx: this, artifactSrcFileURL: URL) => string;
 
   /**
-   * Resolve the absolute target URL of an artifact.
+   * Get the absolute target URL of an artifact.
    *
-   * eg, resolves `file:///home/eric/projects/my-cool-website/src/document/posts/post-1.md` to `file:///home/eric/projects/my-cool-website/target/document/posts/post-1.md`.
+   * eg, from `file:///home/eric/projects/my-cool-website/src/document/posts/post-1.md` to `file:///home/eric/projects/my-cool-website/target/document/posts/post-1.md`.
    */
-  resolveArtifactTargetFileURL: (
-    ctx: PipelineContext,
-    artifact: Artifact,
-  ) => URL;
+  getArtifactTargetFileURL: (ctx: this, artifact: Artifact) => URL;
+
+  getArtifactEmitter: (ctx: this, artifact: Artifact) => ArtifactEmitter;
 }
 
-/**
- * Site-wide pipelinecontext shared between all artifacts, like project paths and resolvers.
- *
- * Provided to all primitives.
- */
-interface PipelineContext {
-  readonly paths: PipelineContextPaths;
-}
-
-abstract class ArtifactEmitter<TArtifact extends Artifact> {
+abstract class ArtifactEmitter<TArtifact extends Artifact = Artifact> {
   /**
    * Emit site files to target directory.
    * The emitted public site files are the final build artifacts.
@@ -68,17 +64,21 @@ abstract class ArtifactEmitter<TArtifact extends Artifact> {
   abstract emit(ctx: PipelineContext, artifact: TArtifact): Promise<void>;
 }
 
-abstract class ArtifactResolver<TArtifact extends Artifact> {
+abstract class ArtifactResolver<TArtifact extends Artifact = Artifact> {
   /**
    * Returns an array.
    */
   abstract resolve(ctx: PipelineContext): Promise<TArtifact | Array<TArtifact>>;
 }
 
+abstract class Pipeline<TPipelineContext extends PipelineContext> {
+  abstract run(ctx: TPipelineContext): Promise<void>;
+}
+
 export {
   Artifact,
   ArtifactResolver,
   ArtifactEmitter,
+  Pipeline,
   type PipelineContext,
-  type PipelineContextPaths,
 };

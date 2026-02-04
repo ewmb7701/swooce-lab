@@ -30,7 +30,7 @@ Artifacts are always backed by a concrete source file on disk; There are no virt
 Examples include:
 
 - A `my-custom-site/IndexPageArtifact` for `src/site/pages/index.ts`
-- A `@swooce/core/VoidArtifact` for `src/site/assets/images/clock-drawing.png`
+- A `@swooce/core/Artifact` for `src/site/assets/images/clock-drawing.png`
 
 ## ArtifactEmitter
 

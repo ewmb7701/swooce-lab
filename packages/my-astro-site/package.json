@@ -1,5 +1,5 @@
 {
-  "name": "swooce-lab",
+  "name": "my-astro-site",
   "type": "module",
   "private": true,
   "devDependencies": {
@@ -9,14 +9,14 @@
     "typescript": "^5"
   },
   "dependencies": {
+    "@swooce/core": "workspace:*",
+    "@swooce/framework-astro": "workspace:*",
     "glob": "^13.0.0",
     "happy-dom": "^20.4.0",
-    "swooce": "workspace:*",
-    "@swooce/core": "workspace:*",
-    "@swooce/site-hello": "workspace:*"
+    "swooce": "workspace:*"
   },
   "scripts": {
     "build": "bun run ./scripts/build.ts",
-    "preview": "bunx http-server ./target/"
+    "preview": "bunx http-server ./dist/"
   }
 }

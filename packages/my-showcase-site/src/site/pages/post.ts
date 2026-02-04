@@ -1,9 +1,17 @@
 import { Document, Window } from "happy-dom";
-import { type PipelineContext } from "swooce";
-import { ContentArtifact, FactoryGlobArtifactResolver } from "@swooce/core";
+import { Artifact, type PipelineContext } from "swooce";
+import {
+  FactoryGlobArtifactResolver,
+  type IArtifactWithSrcFileContent,
+} from "@swooce/core";
+import { pathToFileURL } from "node:url";
+import { sep } from "node:path";
 
-class PostPageArtifact extends ContentArtifact<Document> {
-  override async fetch(_ctx: PipelineContext): Promise<Document> {
+class PostPageArtifact
+  extends Artifact
+  implements IArtifactWithSrcFileContent<Document>
+{
+  async fetchSrcFileContent(_ctx: PipelineContext): Promise<Document> {
     const srcFileText = await (await fetch(this.srcFileURL)).text();
 
     // create document content
@@ -37,7 +45,7 @@ class PostPageArtifact extends ContentArtifact<Document> {
 }
 
 export default FactoryGlobArtifactResolver(
-  import.meta.url,
+  pathToFileURL(`${import.meta.dir}${sep}`),
   "./post/*.md",
   (url) => new PostPageArtifact(url),
 );

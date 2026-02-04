@@ -1,19 +1,19 @@
 import { Document, Window as DOMWindow } from "happy-dom";
-import { ArtifactResolver, type PipelineContext } from "swooce";
-import { ContentArtifact } from "@swooce/core";
 import { glob } from "glob";
+import { Artifact, ArtifactResolver, type PipelineContext } from "swooce";
+import { type IArtifactWithSrcFileContent } from "@swooce/core";
 
-class BlogPageArtifact extends ContentArtifact<Document> {
+class BlogPageArtifact
+  extends Artifact
+  implements IArtifactWithSrcFileContent<Document>
+{
   readonly allPostPageArtifactSrcURL: URL[];
 
-  override async fetch(ctx: PipelineContext): Promise<Document> {
+  async fetchSrcFileContent(ctx: PipelineContext): Promise<Document> {
     // create document content
     const documentContentAllPostPageHTMLListItems =
       this.allPostPageArtifactSrcURL.map((iArtifactSrcFileURL) => {
-        const iDocumentRoute = ctx.paths.resolveArtifactRoute(
-          ctx,
-          iArtifactSrcFileURL,
-        );
+        const iDocumentRoute = ctx.getArtifactRoute(ctx, iArtifactSrcFileURL);
 
         return `<li><a href="${iDocumentRoute}">${iDocumentRoute}</a></li>`;
       });
