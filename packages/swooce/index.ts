@@ -1,47 +1,48 @@
-class Artifact {
-  /**
-   * Absolute URL of the source file of this artifact.
-   *
-   * eg,`/home/eric/projects/my-cool-website/src/document/posts/reasons-im-cool.md`
-   */
-  readonly srcFileURL: URL;
+type Route = string;
 
-  constructor(srcFileURL: URL) {
-    this.srcFileURL = srcFileURL;
+interface IArtifact {
+  readonly route: Route;
+}
+
+class Artifact implements IArtifact {
+  readonly route: Route;
+
+  constructor(route: Route) {
+    this.route = route;
   }
 }
 
-type ArtifactEmitter<TArtifact extends Artifact = Artifact> = (
+type ArtifactEmitter<TEmitArtifact extends IArtifact> = (
   ctx: PipelineContext,
-  artifact: TArtifact,
+  artifact: TEmitArtifact,
 ) => Promise<void>;
 
-type ArtifactResolver<TArtifact extends Artifact = Artifact> = (
+type ArtifactResolver<TResolvedArtifact extends IArtifact> = (
   ctx: PipelineContext,
-) => Promise<TArtifact | Array<TArtifact>>;
+) => Promise<Array<TResolvedArtifact>>;
 
 /**
  * Site-wide context shared between all primitives, like project paths and resolvers.
  *
  * Provided to all primitives.
  */
-interface PipelineContext<TArtifact extends Artifact = Artifact> {
+interface PipelineContext {
   /**
-   * The absolute URL of the site project directory.
+   * The absolute URL of the project directory.
    *
    * eg, "file:///home/eric/projects/my-cool-website/"
    */
   readonly projectDirURL: URL;
 
   /**
-   * The absolute URL of the site source directory.
+   * The absolute URL of the source directory.
    *
    * eg, "file:///home/eric/projects/my-cool-website/src/"
    */
   readonly srcDirURL: URL;
 
   /**
-   * The absolute URL of the document target directory.
+   * The absolute URL of the target directory.
    *
    * eg, "file:///home/eric/projects/my-cool-website/dist/"
    *
@@ -51,30 +52,26 @@ interface PipelineContext<TArtifact extends Artifact = Artifact> {
   readonly targetDirURL: URL;
 
   /**
-   * Get the route of an artifact using the artifact src file URL.
+   * Get the route of an artifact using the src file URL of the artifact.
    */
-  getArtifactRoute: (ctx: this, artifactSrcFileURL: URL) => string;
+  getArtifactRouteUsingSrcFileURL: (artifactSrcFileURL: URL) => Route;
 
   /**
    * Get the absolute target URL of an artifact.
    *
-   * eg, from `file:///home/eric/projects/my-cool-website/src/document/posts/post-1.md` to `file:///home/eric/projects/my-cool-website/target/document/posts/post-1.md`.
+   * eg, from `file:///home/eric/projects/my-cool-website/src/site/pages/posts/post-1.md` to `file:///home/eric/projects/my-cool-website/target/post-1.md.html`.
    */
-  getArtifactTargetFileURL: (ctx: this, artifact: TArtifact) => URL;
-
-  getArtifactEmitter: (
-    ctx: this,
-    artifact: TArtifact,
-  ) => ArtifactEmitter<TArtifact>;
+  getArtifactTargetFileURL: (artifact: IArtifact) => URL;
 }
 
-type Pipeline<
-  TPipelineContext extends PipelineContext<TArtifact>,
-  TArtifact extends Artifact = Artifact,
-> = (ctx: TPipelineContext) => Promise<void>;
+type Pipeline<TPipelineContext extends PipelineContext> = (
+  ctx: TPipelineContext,
+) => Promise<void>;
 
 export {
   Artifact,
+  type IArtifact,
+  type Route,
   type ArtifactResolver,
   type ArtifactEmitter,
   type Pipeline,

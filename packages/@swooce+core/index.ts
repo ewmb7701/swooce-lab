@@ -2,16 +2,40 @@ import { copyFile, mkdir } from "node:fs/promises";
 import { dirname, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { glob } from "glob";
-import type { Artifact, ArtifactResolver, PipelineContext } from "swooce";
+import {
+  type IArtifact,
+  type ArtifactResolver,
+  type PipelineContext,
+  Artifact,
+  type Route,
+} from "swooce";
 
-/**
- * Artifact with src file content.
- */
-interface IArtifactWithSrcFileContent<TSrcContent> {
+interface IArtifactWithSrcFile {
   /**
-   * Fetch the content of the src file of this artifact.
+   * Absolute URL of the source file of this artifact.
+   *
+   * eg,`/home/eric/projects/my-cool-website/src/site/pages/posts/reasons-im-cool.md`
    */
-  fetchSrcFileContent(ctx: PipelineContext): Promise<TSrcContent>;
+  readonly srcFileURL: URL;
+}
+
+interface IArtifactWithSrcContent<TSrcContent> {
+  /**
+   * Fetch the content of the src of this artifact.
+   */
+  fetchSrcContent(ctx: PipelineContext): Promise<TSrcContent>;
+}
+
+class SrcFileArtifact
+  extends Artifact
+  implements IArtifact, IArtifactWithSrcFile
+{
+  readonly srcFileURL: URL;
+
+  constructor(route: Route, srcFileURL: URL) {
+    super(route);
+    this.srcFileURL = srcFileURL;
+  }
 }
 
 /**
@@ -19,20 +43,22 @@ interface IArtifactWithSrcFileContent<TSrcContent> {
  * using a given factory.
  */
 function createFactoryGlobArtifactResolver<T extends Artifact>(
-  baseDirURL: URL,
   pattern: string,
-  artifactFactory: (artifactSrcFileURL: URL) => T,
-): ArtifactResolver<Artifact> {
-  return async (_ctx) => {
+  getCwdURL: (ctx: PipelineContext) => URL,
+  artifactFactory: (ctx: PipelineContext, srcFileURL: URL) => T,
+): ArtifactResolver<T> {
+  return async (ctx) => {
+    const cwd = getCwdURL(ctx);
+
     const matches = await glob(pattern, {
-      cwd: baseDirURL,
+      cwd: cwd,
       nodir: true,
       posix: true,
       dotRelative: true,
     });
 
     return matches.map((relativePath) =>
-      artifactFactory(new URL(relativePath, baseDirURL)),
+      artifactFactory(ctx, new URL(relativePath, cwd)),
     );
   };
 }
@@ -44,34 +70,37 @@ function createFactoryGlobArtifactResolver<T extends Artifact>(
  * The matching files must be ES modules with an ArtifactResolver
  * as the default export.
  */
-function createDynamicGlobArtifactResolver(
-  baseDirURL: URL,
+function createDynamicGlobArtifactResolver<
+  TResolveArtifact extends IArtifact = IArtifact,
+>(
   pattern: string,
-): ArtifactResolver<Artifact> {
+  getCwdURL: (ctx: PipelineContext) => URL,
+): ArtifactResolver<TResolveArtifact> {
   return async (ctx) => {
+    const cwd = getCwdURL(ctx);
+
     const matches = await glob(pattern, {
-      cwd: baseDirURL,
+      cwd: cwd,
       nodir: true,
       posix: true,
       dotRelative: true,
     });
 
-    const artifacts: Artifact[] = [];
+    const artifacts: TResolveArtifact[] = [];
 
     for (const relativePath of matches) {
-      const resolverModuleURL = new URL(relativePath, baseDirURL);
-
+      const resolverModuleURL = new URL(relativePath, cwd);
       const resolverModule = await import(fileURLToPath(resolverModuleURL));
 
       const resolveArtifact =
-        resolverModule.default as ArtifactResolver<Artifact>;
+        resolverModule.default as ArtifactResolver<TResolveArtifact>;
 
-      const resolved = await resolveArtifact(ctx);
+      const resolvedArtifact = await resolveArtifact(ctx);
 
-      if (Array.isArray(resolved)) {
-        artifacts.push(...resolved);
+      if (Array.isArray(resolvedArtifact)) {
+        artifacts.push(...resolvedArtifact);
       } else {
-        artifacts.push(resolved);
+        artifacts.push(resolvedArtifact);
       }
     }
 
@@ -82,28 +111,25 @@ function createDynamicGlobArtifactResolver(
 /**
  * Artifact emitter which copies the artifact src file to its target file path.
  */
-async function emitFileArtifactViaCopy(
+async function emitArtifactSrcFileViaCopy(
   ctx: PipelineContext,
-  artifact: Artifact,
+  artifact: IArtifact & IArtifactWithSrcFile,
 ) {
-  console.log(
-    `CopyFileArtifactEmitter will emit artifact ${artifact.srcFileURL}`,
-  );
+  const srcFileURL = artifact.srcFileURL;
 
-  const targetFileURL = ctx.getArtifactTargetFileURL(ctx, artifact);
+  const targetFileURL = ctx.getArtifactTargetFileURL(artifact);
   const targetFileDir = `${dirname(fileURLToPath(targetFileURL))}${sep}`;
 
   await mkdir(targetFileDir, { recursive: true });
-  await copyFile(artifact.srcFileURL, targetFileURL);
-
-  console.log(
-    `CopyFileArtifactEmitter did emit artifact ${artifact.srcFileURL} -> ${targetFileURL}`,
-  );
+  await copyFile(srcFileURL, targetFileURL);
 }
 
 export {
-  emitFileArtifactViaCopy,
+  SrcFileArtifact,
+  emitArtifactSrcFileViaCopy,
   createDynamicGlobArtifactResolver,
   createFactoryGlobArtifactResolver,
-  type IArtifactWithSrcFileContent,
+  type IArtifact,
+  type IArtifactWithSrcFile,
+  type IArtifactWithSrcContent,
 };

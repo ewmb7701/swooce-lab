@@ -88,7 +88,7 @@ It represents the execution environment in which resolvers and emitters operate.
 
 Resolvers and emitters receive the `PipelineContext` as an explicit parameter and must not rely on global state.
 
-The `PipelineContext` is created by the build script (or by a framework-provided default) and is immutable for the duration of the run.
+The `PipelineContext` is created by the build script and is immutable for the duration of the run.
 
 ### Responsibilities
 
@@ -131,7 +131,7 @@ It is responsible for:
 
 - Creating the `PipelineContext`
 - Selecting one or more pipelines to run
-- Invoking `pipeline.run(ctx)`
+- Running the pipelines
 
 This `swooce` package itself does not provide a build script.
 
@@ -141,9 +141,8 @@ A framework is a distribution layer built on top of `swooce`.
 
 Framework packages (eg `@swooce/framework-astro`) provide ergonomics to the end user:
 
-- A build script or CLI entry point
 - One or more pipelines
-- A default `PipelineContext` constructor
+- A `PipelineContext` constructor
 - Conventional project layout and defaults
 
 This `swooce` package itself does not provide a framework.

@@ -1,19 +1,20 @@
 import { Document, Window as DOMWindow } from "happy-dom";
 import { glob } from "glob";
-import { Artifact, type PipelineContext } from "swooce";
-import { type IArtifactWithSrcFileContent } from "@swooce/core";
+import { type Route, type PipelineContext } from "swooce";
+import { SrcFileArtifact, type IArtifactWithSrcContent } from "@swooce/core";
 
 class BlogPagesArtifact
-  extends Artifact
-  implements IArtifactWithSrcFileContent<Document>
+  extends SrcFileArtifact
+  implements IArtifactWithSrcContent<Document>
 {
   readonly allPostPageArtifactSrcURL: URL[];
 
-  async fetchSrcFileContent(ctx: PipelineContext): Promise<Document> {
+  async fetchSrcContent(ctx: PipelineContext): Promise<Document> {
     // create document content
     const documentContentAllPostPageHTMLListItems =
       this.allPostPageArtifactSrcURL.map((iArtifactSrcFileURL) => {
-        const iDocumentRoute = ctx.getArtifactRoute(ctx, iArtifactSrcFileURL);
+        const iDocumentRoute =
+          ctx.getArtifactRouteUsingSrcFileURL(iArtifactSrcFileURL);
 
         return `<li><a href="${iDocumentRoute}">${iDocumentRoute}</a></li>`;
       });
@@ -42,26 +43,29 @@ class BlogPagesArtifact
     return document;
   }
 
-  constructor(srcFileURL: URL, allPostPageArtifactSrcURL: URL[]) {
-    super(srcFileURL);
+  constructor(route: Route, srcFileURL: URL, allPostPageArtifactSrcURL: URL[]) {
+    super(route, srcFileURL);
     this.allPostPageArtifactSrcURL = allPostPageArtifactSrcURL;
   }
 }
 
-export default async function (_ctx: PipelineContext) {
+export default async function (ctx: PipelineContext) {
   const allPostArtifactSrcFileRelativePath = await glob(`./post/*.md`, {
     cwd: import.meta.dir,
     posix: true,
     dotRelative: true,
   });
-
   const allPostArtifactSrcFileRelativeURL =
     allPostArtifactSrcFileRelativePath.map((iPostPageSrcFileRelativePath) => {
       return new URL(import.meta.resolve(iPostPageSrcFileRelativePath));
     });
+  // TODO actualize post artifact routes here
 
+  const srcFileURL = new URL(import.meta.url);
+  const route = ctx.getArtifactRouteUsingSrcFileURL(srcFileURL);
   return new BlogPagesArtifact(
-    new URL(import.meta.url),
+    route,
+    srcFileURL,
     allPostArtifactSrcFileRelativeURL,
   );
 }

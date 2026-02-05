@@ -3,57 +3,53 @@ import { dirname, sep } from "node:path";
 import { relative as posixRelative } from "node:path/posix";
 import { fileURLToPath } from "node:url";
 import type { Document } from "happy-dom";
-import { Artifact, type PipelineContext } from "swooce";
+import { type PipelineContext } from "swooce";
 import {
   createDynamicGlobArtifactResolver,
   createFactoryGlobArtifactResolver,
-  emitFileArtifactViaCopy,
-  type IArtifactWithSrcFileContent,
+  emitArtifactSrcFileViaCopy,
+  SrcFileArtifact,
+  type IArtifactWithSrcContent,
 } from "@swooce/core";
 
-type ShowcasePagesArtifact = Artifact & IArtifactWithSrcFileContent<Document>;
-type ShowcaseStaticArtifact = Artifact;
-type ShowcaseArtifact = ShowcasePagesArtifact | ShowcaseStaticArtifact;
+type ShowcasePagesArtifact = SrcFileArtifact &
+  IArtifactWithSrcContent<Document>;
+type ShowcaseStaticArtifact = SrcFileArtifact;
 
 async function resolvePagesArtifact(ctx: ShowcasePipelineContext) {
-  const resolveDynamicGlobArtifact = createDynamicGlobArtifactResolver(
-    ctx.projectDirURL,
-    "./src/site/pages/**/*.ts",
-  );
+  const resolveDynamicGlobArtifact =
+    createDynamicGlobArtifactResolver<ShowcasePagesArtifact>(
+      "./src/site/pages/**/*.ts",
+      (ctx) => ctx.projectDirURL,
+    );
 
-  const pagesArtifact = (await resolveDynamicGlobArtifact(ctx)) as Array<
-    Artifact & IArtifactWithSrcFileContent<Document>
-  >;
+  const pagesArtifact = await resolveDynamicGlobArtifact(ctx);
 
   return pagesArtifact;
 }
 
-async function resolveStaticArtifact(ctx: ShowcasePipelineContext) {
-  const resolveDynamicGlobArtifact = createFactoryGlobArtifactResolver(
-    ctx.projectDirURL,
+const resolveStaticArtifact =
+  createFactoryGlobArtifactResolver<ShowcaseStaticArtifact>(
     "./src/site/static/**",
-    (srcFileURL) => new Artifact(srcFileURL),
+    (ctx) => ctx.projectDirURL,
+    (ctx, srcFileURL) =>
+      new SrcFileArtifact(
+        ctx.getArtifactRouteUsingSrcFileURL(srcFileURL),
+        srcFileURL,
+      ),
   );
 
-  const staticArtifact = (await resolveDynamicGlobArtifact(ctx)) as Array<
-    Artifact & IArtifactWithSrcFileContent<Document>
-  >;
-
-  return staticArtifact;
-}
 async function emitShowcasePagesArtifact(
   ctx: ShowcasePipelineContext,
-  artifact: ShowcaseArtifact,
+  artifact: ShowcasePagesArtifact,
 ): Promise<void> {
   // TODO type guard
-  const srcContent = await (
-    artifact as ShowcasePagesArtifact
-  ).fetchSrcFileContent(ctx);
+  const srcContent = await artifact.fetchSrcContent(ctx);
 
   // TODO transform
 
   const targetContent = srcContent;
-  const targetFileURL = ctx.getArtifactTargetFileURL(ctx, artifact);
+  const targetFileURL = ctx.getArtifactTargetFileURL(artifact);
   const targetFilePath = fileURLToPath(targetFileURL);
   const targetDir = `${dirname(targetFilePath)}${sep}`;
 
@@ -65,7 +61,7 @@ async function emitShowcasePagesArtifact(
   );
 }
 
-interface ShowcasePipelineContext extends PipelineContext<ShowcaseArtifact> {}
+interface ShowcasePipelineContext extends PipelineContext {}
 
 function createShowcasePipelineContext(
   packageJsonURL: URL,
@@ -75,13 +71,13 @@ function createShowcasePipelineContext(
   const targetDirURL = new URL("./target/", projectDirURL);
 
   return {
-    getArtifactRoute: function (
-      ctx: ShowcasePipelineContext,
-      artifactSrcFileURL: URL,
-    ): string {
+    projectDirURL: projectDirURL,
+    srcDirURL: srcDirURL,
+    targetDirURL: targetDirURL,
+    getArtifactRouteUsingSrcFileURL(artifactSrcFileURL: URL): string {
       // get relative path of artifact wrt to project dir
       const artifactSrcFileRelativeURLPath = `/${posixRelative(
-        ctx.projectDirURL.href,
+        projectDirURL.href,
         artifactSrcFileURL.href,
       )}`;
 
@@ -99,27 +95,11 @@ function createShowcasePipelineContext(
         );
       }
     },
-    getArtifactTargetFileURL: function (
-      ctx: ShowcasePipelineContext,
-      artifact: Artifact,
-    ): URL {
-      const artifactRoute = this.getArtifactRoute(ctx, artifact.srcFileURL);
+    getArtifactTargetFileURL: function (artifact): URL {
+      const artifactRoute = artifact.route;
 
-      return new URL(`.${artifactRoute}`, `${ctx.targetDirURL}`);
+      return new URL(`.${artifactRoute}`, `${this.targetDirURL}`);
     },
-    getArtifactEmitter(ctx, artifact) {
-      const artifactRoute = ctx.getArtifactRoute(ctx, artifact.srcFileURL);
-
-      if (artifactRoute.endsWith(".ts.html")) {
-        return emitShowcasePagesArtifact;
-      }
-
-      // fallback to copy
-      return emitFileArtifactViaCopy;
-    },
-    projectDirURL: projectDirURL,
-    srcDirURL: srcDirURL,
-    targetDirURL: targetDirURL,
   };
 }
 
@@ -127,14 +107,14 @@ async function runShowcasePipeline(ctx: ShowcasePipelineContext) {
   await rm(ctx.targetDirURL, { recursive: true, force: true });
   await mkdir(ctx.targetDirURL, { recursive: true });
 
-  const pageArtifact = await resolvePagesArtifact(ctx);
+  const modulePagesArtifact = await resolvePagesArtifact(ctx);
+  for (const iModulePageArtifact of modulePagesArtifact) {
+    emitShowcasePagesArtifact(ctx, iModulePageArtifact);
+  }
+
   const staticArtifact = await resolveStaticArtifact(ctx);
-
-  const siteArtifact = [...pageArtifact, ...staticArtifact];
-
-  for (const iArtifact of siteArtifact) {
-    const emitArtifact = ctx.getArtifactEmitter(ctx, iArtifact);
-    await emitArtifact(ctx, iArtifact);
+  for (const iStaticArtifact of staticArtifact) {
+    emitArtifactSrcFileViaCopy(ctx, iStaticArtifact);
   }
 }
 

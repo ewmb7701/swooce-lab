@@ -1,17 +1,18 @@
-import { Document, Window } from "happy-dom";
-import { Artifact, type PipelineContext } from "swooce";
-import {
-  createFactoryGlobArtifactResolver,
-  type IArtifactWithSrcFileContent,
-} from "@swooce/core";
 import { pathToFileURL } from "node:url";
 import { sep } from "node:path";
+import { Document, Window } from "happy-dom";
+import { type PipelineContext, type Route } from "swooce";
+import {
+  createFactoryGlobArtifactResolver,
+  SrcFileArtifact,
+  type IArtifactWithSrcContent,
+} from "@swooce/core";
 
 class PostPageArtifact
-  extends Artifact
-  implements IArtifactWithSrcFileContent<Document>
+  extends SrcFileArtifact
+  implements IArtifactWithSrcContent<Document>
 {
-  async fetchSrcFileContent(_ctx: PipelineContext): Promise<Document> {
+  async fetchSrcContent(_ctx: PipelineContext): Promise<Document> {
     const srcFileText = await (await fetch(this.srcFileURL)).text();
 
     // create document content
@@ -39,13 +40,17 @@ class PostPageArtifact
     return document;
   }
 
-  constructor(srcFileURL: URL) {
-    super(srcFileURL);
+  constructor(route: Route, srcFileURL: URL) {
+    super(route, srcFileURL);
   }
 }
 
 export default createFactoryGlobArtifactResolver(
-  pathToFileURL(`${import.meta.dir}${sep}`),
   "./post/*.md",
-  (url) => new PostPageArtifact(url),
+  (_ctx) => pathToFileURL(`${import.meta.dir}${sep}`),
+  (ctx, url) => {
+    const artifactRoute = ctx.getArtifactRouteUsingSrcFileURL(url);
+    const artifactSrcFileURL = url;
+    return new PostPageArtifact(artifactRoute, artifactSrcFileURL);
+  },
 );

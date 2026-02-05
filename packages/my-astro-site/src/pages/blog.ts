@@ -1,19 +1,20 @@
 import { glob } from "glob";
 import { Window, Document } from "happy-dom";
-import { Artifact, type PipelineContext } from "swooce";
-import type { IArtifactWithSrcFileContent } from "@swooce/core";
+import { type PipelineContext, type Route } from "swooce";
+import { SrcFileArtifact, type IArtifactWithSrcContent } from "@swooce/core";
 
 class BlogPageModuleArtifact
-  extends Artifact
-  implements IArtifactWithSrcFileContent<Document>
+  extends SrcFileArtifact
+  implements IArtifactWithSrcContent<Document>
 {
   readonly allPostPageArtifactSrcURL: URL[];
 
-  async fetchSrcFileContent(ctx: PipelineContext): Promise<Document> {
+  async fetchSrcContent(ctx: PipelineContext): Promise<Document> {
     // create document content
     const documentContentAllPostPageHTMLListItems =
       this.allPostPageArtifactSrcURL.map((iArtifactSrcFileURL) => {
-        const iDocumentRoute = ctx.getArtifactRoute(ctx, iArtifactSrcFileURL);
+        const iDocumentRoute =
+          ctx.getArtifactRouteUsingSrcFileURL(iArtifactSrcFileURL);
 
         return `<li><a href="${iDocumentRoute}">${iDocumentRoute}</a></li>`;
       });
@@ -42,8 +43,8 @@ class BlogPageModuleArtifact
     return document;
   }
 
-  constructor(srcFileURL: URL, allPostPageArtifactSrcURL: URL[]) {
-    super(srcFileURL);
+  constructor(route: Route, srcFileURL: URL, allPostPageArtifactSrcURL: URL[]) {
+    super(route, srcFileURL);
     this.allPostPageArtifactSrcURL = allPostPageArtifactSrcURL;
   }
 }
@@ -61,8 +62,14 @@ export default async function (ctx: PipelineContext) {
       return new URL(import.meta.resolve(iPostPageSrcFileRelativePath));
     });
 
-  return new BlogPageModuleArtifact(
+  const artifactRoute = ctx.getArtifactRouteUsingSrcFileURL(
     new URL(import.meta.url),
+  );
+  const artifactSrcFileURL = new URL(import.meta.url);
+
+  return new BlogPageModuleArtifact(
+    artifactRoute,
+    artifactSrcFileURL,
     allPostArtifactSrcFileRelativeURL,
   );
 }

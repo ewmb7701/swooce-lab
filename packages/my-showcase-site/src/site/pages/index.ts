@@ -1,12 +1,12 @@
 import { Document, Window } from "happy-dom";
-import { Artifact, type PipelineContext } from "swooce";
-import type { IArtifactWithSrcFileContent } from "@swooce/core";
+import { type PipelineContext } from "swooce";
+import { SrcFileArtifact, type IArtifactWithSrcContent } from "@swooce/core";
 
 class IndexPageArtifact
-  extends Artifact
-  implements IArtifactWithSrcFileContent<Document>
+  extends SrcFileArtifact
+  implements IArtifactWithSrcContent<Document>
 {
-  async fetchSrcFileContent(_ctx: PipelineContext) {
+  async fetchSrcContent(_ctx: PipelineContext) {
     const window = new Window();
     const document = window.document;
     const documentHTML = `
@@ -36,6 +36,9 @@ class IndexPageArtifact
   }
 }
 
-export default function resolve(_ctx: PipelineContext) {
-  return Promise.resolve(new IndexPageArtifact(new URL(import.meta.url)));
+export default function resolve(ctx: PipelineContext) {
+  const srcFileURL = new URL(import.meta.url);
+  const route = ctx.getArtifactRouteUsingSrcFileURL(srcFileURL);
+
+  return Promise.resolve(new IndexPageArtifact(route, srcFileURL));
 }
