@@ -1,32 +1,44 @@
-type Route = string;
+type ArtifactRoute = string;
 
 interface IArtifact {
-  readonly route: Route;
+  readonly route: ArtifactRoute;
 }
 
 class Artifact implements IArtifact {
-  readonly route: Route;
+  readonly route: ArtifactRoute;
 
-  constructor(route: Route) {
+  constructor(route: ArtifactRoute) {
     this.route = route;
   }
 }
 
-type ArtifactEmitter<TEmitArtifact extends IArtifact> = (
-  ctx: PipelineContext,
+type ArtifactEmitter<TEmitArtifact> = (
+  siteContext: ISiteContext,
   artifact: TEmitArtifact,
 ) => Promise<void>;
 
-type ArtifactResolver<TResolvedArtifact extends IArtifact> = (
-  ctx: PipelineContext,
+type ArtifactResolver<TResolvedArtifact> = (
+  siteContext: ISiteContext,
 ) => Promise<Array<TResolvedArtifact>>;
+
+interface IArtifactProducer {
+  resolve(ctx: ISiteContext): Promise<IArtifact[]>;
+  emit(ctx: ISiteContext, artifact: IArtifact): Promise<void>;
+}
+
+interface ArtifactProducer<
+  TArtifact extends Artifact,
+> extends IArtifactProducer {
+  resolve(ctx: ISiteContext): Promise<TArtifact[]>;
+  emit(ctx: ISiteContext, artifact: TArtifact): Promise<void>;
+}
 
 /**
  * Site-wide context shared between all primitives, like project paths and resolvers.
  *
  * Provided to all primitives.
  */
-interface PipelineContext {
+interface ISiteContext {
   /**
    * The absolute URL of the project directory.
    *
@@ -54,7 +66,7 @@ interface PipelineContext {
   /**
    * Get the route of an artifact using the src file URL of the artifact.
    */
-  getArtifactRouteUsingSrcFileURL: (artifactSrcFileURL: URL) => Route;
+  getArtifactRouteUsingSrcFileURL: (artifactSrcFileURL: URL) => ArtifactRoute;
 
   /**
    * Get the absolute target URL of an artifact.
@@ -64,16 +76,18 @@ interface PipelineContext {
   getArtifactTargetFileURL: (artifact: IArtifact) => URL;
 }
 
-type Pipeline<TPipelineContext extends PipelineContext> = (
-  ctx: TPipelineContext,
-) => Promise<void>;
+interface ISite {
+  readonly artifactProducer: Array<IArtifactProducer>;
+}
 
 export {
   Artifact,
   type IArtifact,
-  type Route,
+  type ArtifactRoute,
   type ArtifactResolver,
   type ArtifactEmitter,
-  type Pipeline,
-  type PipelineContext,
+  type IArtifactProducer,
+  type ArtifactProducer,
+  type ISite,
+  type ISiteContext,
 };

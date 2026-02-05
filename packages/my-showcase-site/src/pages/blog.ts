@@ -1,6 +1,6 @@
 import { Document, Window as DOMWindow } from "happy-dom";
 import { glob } from "glob";
-import { type Route, type PipelineContext } from "swooce";
+import { type ArtifactRoute, type ISiteContext } from "swooce";
 import { SrcFileArtifact, type IArtifactWithSrcContent } from "@swooce/core";
 
 class BlogPagesArtifact
@@ -9,12 +9,12 @@ class BlogPagesArtifact
 {
   readonly allPostPageArtifactSrcURL: URL[];
 
-  async fetchSrcContent(ctx: PipelineContext): Promise<Document> {
+  async fetchSrcContent(siteContext: ISiteContext): Promise<Document> {
     // create document content
     const documentContentAllPostPageHTMLListItems =
       this.allPostPageArtifactSrcURL.map((iArtifactSrcFileURL) => {
         const iDocumentRoute =
-          ctx.getArtifactRouteUsingSrcFileURL(iArtifactSrcFileURL);
+          siteContext.getArtifactRouteUsingSrcFileURL(iArtifactSrcFileURL);
 
         return `<li><a href="${iDocumentRoute}">${iDocumentRoute}</a></li>`;
       });
@@ -43,13 +43,17 @@ class BlogPagesArtifact
     return document;
   }
 
-  constructor(route: Route, srcFileURL: URL, allPostPageArtifactSrcURL: URL[]) {
+  constructor(
+    route: ArtifactRoute,
+    srcFileURL: URL,
+    allPostPageArtifactSrcURL: URL[],
+  ) {
     super(route, srcFileURL);
     this.allPostPageArtifactSrcURL = allPostPageArtifactSrcURL;
   }
 }
 
-export default async function (ctx: PipelineContext) {
+export default async function (siteContext: ISiteContext) {
   const allPostArtifactSrcFileRelativePath = await glob(`./post/*.md`, {
     cwd: import.meta.dir,
     posix: true,
@@ -62,7 +66,7 @@ export default async function (ctx: PipelineContext) {
   // TODO actualize post artifact routes here
 
   const srcFileURL = new URL(import.meta.url);
-  const route = ctx.getArtifactRouteUsingSrcFileURL(srcFileURL);
+  const route = siteContext.getArtifactRouteUsingSrcFileURL(srcFileURL);
   return new BlogPagesArtifact(
     route,
     srcFileURL,

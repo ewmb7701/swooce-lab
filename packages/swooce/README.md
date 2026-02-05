@@ -76,19 +76,19 @@ A pipeline defines:
 - Selection of resolvers and emitters to run
 - Coordination of artifact flow from resolvers to emitters
 
-Pipelines orchestrate resolvers and emitters but do not define _how_ artifacts are resolved or emitted; those policies are defined in the `PipelineContext`.
+Pipelines orchestrate resolvers and emitters but do not define _how_ artifacts are resolved or emitted; those policies are defined in the `SiteContext`.
 
 This `swooce` package itself does not provide a pipeline.
 
-## PipelineContext
+## SiteContext
 
-The `PipelineContext` provides shared, read-only policy and coordination data for a pipeline run.
+The `SiteContext` provides shared, read-only policy and coordination data for a pipeline run.
 
-It represents the execution environment in which resolvers and emitters operate. Rather than hard-coding assumptions about project layout, routing, or emission behavior, `swooce` passes this information explicitly via the `PipelineContext`.
+It represents the execution environment in which resolvers and emitters operate. Rather than hard-coding assumptions about project layout, routing, or emission behavior, `swooce` passes this information explicitly via the `SiteContext`.
 
-Resolvers and emitters receive the `PipelineContext` as an explicit parameter and must not rely on global state.
+Resolvers and emitters receive the `SiteContext` as an explicit parameter and must not rely on global state.
 
-The `PipelineContext` is created by the build script and is immutable for the duration of the run.
+The `SiteContext` is created by the build script and is immutable for the duration of the run.
 
 ### Responsibilities
 
@@ -109,11 +109,11 @@ A pipeline context does **not**:
 
 It is a policy container, not a controller.
 
-### Why PipelineContext Exists
+### Why SiteContext Exists
 
-Pipelines in `swooce` are opinionated by design. The `PipelineContext` is how those opinions are expressed and enforced.
+Pipelines in `swooce` are opinionated by design. The `SiteContext` is how those opinions are expressed and enforced.
 
-Different pipelines may define radically different `PipelineContexts`, even for the same project:
+Different pipelines may define radically different `SiteContexts`, even for the same project:
 
 - a static-site pipeline
 - a documentation pipeline
@@ -129,7 +129,7 @@ Build scripts are the entry point of a `swooce` build. They define when and how 
 
 It is responsible for:
 
-- Creating the `PipelineContext`
+- Creating the `SiteContext`
 - Selecting one or more pipelines to run
 - Running the pipelines
 
@@ -142,7 +142,7 @@ A framework is a distribution layer built on top of `swooce`.
 Framework packages (eg `@swooce/framework-astro`) provide ergonomics to the end user:
 
 - One or more pipelines
-- A `PipelineContext` constructor
+- A `SiteContext` constructor
 - Conventional project layout and defaults
 
 This `swooce` package itself does not provide a framework.

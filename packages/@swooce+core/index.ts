@@ -1,13 +1,14 @@
-import { copyFile, mkdir } from "node:fs/promises";
+import { copyFile, mkdir, rm } from "node:fs/promises";
 import { dirname, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { glob } from "glob";
 import {
   type IArtifact,
   type ArtifactResolver,
-  type PipelineContext,
+  type ISiteContext,
   Artifact,
-  type Route,
+  type ArtifactRoute,
+  type ISite,
 } from "swooce";
 
 interface IArtifactWithSrcFile {
@@ -23,7 +24,7 @@ interface IArtifactWithSrcContent<TSrcContent> {
   /**
    * Fetch the content of the src of this artifact.
    */
-  fetchSrcContent(ctx: PipelineContext): Promise<TSrcContent>;
+  fetchSrcContent(siteContext: ISiteContext): Promise<TSrcContent>;
 }
 
 class SrcFileArtifact
@@ -32,7 +33,7 @@ class SrcFileArtifact
 {
   readonly srcFileURL: URL;
 
-  constructor(route: Route, srcFileURL: URL) {
+  constructor(route: ArtifactRoute, srcFileURL: URL) {
     super(route);
     this.srcFileURL = srcFileURL;
   }
@@ -44,11 +45,11 @@ class SrcFileArtifact
  */
 function createFactoryGlobArtifactResolver<T extends Artifact>(
   pattern: string,
-  getCwdURL: (ctx: PipelineContext) => URL,
-  artifactFactory: (ctx: PipelineContext, srcFileURL: URL) => T,
+  getCwdURL: (siteContext: ISiteContext) => URL,
+  artifactFactory: (siteContext: ISiteContext, srcFileURL: URL) => T,
 ): ArtifactResolver<T> {
-  return async (ctx) => {
-    const cwd = getCwdURL(ctx);
+  return async (siteContext) => {
+    const cwd = getCwdURL(siteContext);
 
     const matches = await glob(pattern, {
       cwd: cwd,
@@ -58,7 +59,7 @@ function createFactoryGlobArtifactResolver<T extends Artifact>(
     });
 
     return matches.map((relativePath) =>
-      artifactFactory(ctx, new URL(relativePath, cwd)),
+      artifactFactory(siteContext, new URL(relativePath, cwd)),
     );
   };
 }
@@ -74,10 +75,10 @@ function createDynamicGlobArtifactResolver<
   TResolveArtifact extends IArtifact = IArtifact,
 >(
   pattern: string,
-  getCwdURL: (ctx: PipelineContext) => URL,
+  getCwdURL: (siteContext: ISiteContext) => URL,
 ): ArtifactResolver<TResolveArtifact> {
-  return async (ctx) => {
-    const cwd = getCwdURL(ctx);
+  return async (siteContext) => {
+    const cwd = getCwdURL(siteContext);
 
     const matches = await glob(pattern, {
       cwd: cwd,
@@ -95,7 +96,7 @@ function createDynamicGlobArtifactResolver<
       const resolveArtifact =
         resolverModule.default as ArtifactResolver<TResolveArtifact>;
 
-      const resolvedArtifact = await resolveArtifact(ctx);
+      const resolvedArtifact = await resolveArtifact(siteContext);
 
       if (Array.isArray(resolvedArtifact)) {
         artifacts.push(...resolvedArtifact);
@@ -112,20 +113,41 @@ function createDynamicGlobArtifactResolver<
  * Artifact emitter which copies the artifact src file to its target file path.
  */
 async function emitArtifactSrcFileViaCopy(
-  ctx: PipelineContext,
+  siteContext: ISiteContext,
   artifact: IArtifact & IArtifactWithSrcFile,
 ) {
   const srcFileURL = artifact.srcFileURL;
 
-  const targetFileURL = ctx.getArtifactTargetFileURL(artifact);
+  const targetFileURL = siteContext.getArtifactTargetFileURL(artifact);
   const targetFileDir = `${dirname(fileURLToPath(targetFileURL))}${sep}`;
 
   await mkdir(targetFileDir, { recursive: true });
   await copyFile(srcFileURL, targetFileURL);
 }
 
+async function buildSite(
+  siteContext: ISiteContext,
+  site: ISite,
+): Promise<void> {
+  await rm(siteContext.targetDirURL, { recursive: true, force: true });
+  await mkdir(siteContext.targetDirURL, { recursive: true });
+
+  for (const iArtifactProducer of site.artifactProducer) {
+    const iResolvedArtifact = await iArtifactProducer.resolve(siteContext);
+
+    if (Array.isArray(iResolvedArtifact)) {
+      for (const iiResolvedArtifact of iResolvedArtifact) {
+        await iArtifactProducer.emit(siteContext, iiResolvedArtifact);
+      }
+    } else {
+      await iArtifactProducer.emit(siteContext, iResolvedArtifact);
+    }
+  }
+}
+
 export {
   SrcFileArtifact,
+  buildSite,
   emitArtifactSrcFileViaCopy,
   createDynamicGlobArtifactResolver,
   createFactoryGlobArtifactResolver,

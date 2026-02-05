@@ -1,9 +1,8 @@
-import {
-  createAstroPipelineContext,
-  runAstroPipeline,
-} from "@swooce/framework-astro";
+import { buildSite } from "@swooce/core";
+import { createSite, createSiteContext } from "@swooce/framework-astro";
 
-const packageJsonURL = new URL("../package.json", import.meta.url);
-
-const myAstroPipelineContext = createAstroPipelineContext(packageJsonURL);
-await runAstroPipeline(myAstroPipelineContext);
+const myAstroSiteContext = createSiteContext(
+  new URL("../package.json", import.meta.url),
+);
+const myAstroSite = createSite();
+await buildSite(myAstroSiteContext, myAstroSite);

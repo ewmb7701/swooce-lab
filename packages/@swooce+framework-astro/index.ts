@@ -3,7 +3,13 @@ import { dirname as osPathDirname, sep as osPathSep } from "node:path";
 import { relative as posixRelative } from "node:path/posix";
 import { fileURLToPath } from "node:url";
 import { Document, Window } from "happy-dom";
-import { type Route, type IArtifact, type PipelineContext } from "swooce";
+import {
+  type ArtifactRoute,
+  type IArtifact,
+  type IArtifactProducer,
+  type ISite,
+  type ISiteContext,
+} from "swooce";
 import {
   createDynamicGlobArtifactResolver,
   createFactoryGlobArtifactResolver,
@@ -25,12 +31,12 @@ class AstroMarkdownPagesArtifact
     IArtifactWithSrcFile,
     IArtifactWithSrcContent<AstroMarkdownPagesArtifactContent>
 {
-  async fetchSrcContent(_ctx: AstroPipelineContext): Promise<string> {
+  async fetchSrcContent(_siteContext: AstroSiteContext): Promise<string> {
     const srcFileText = await (await fetch(this.srcFileURL)).text();
     return srcFileText;
   }
 
-  constructor(route: Route, srcFileURL: URL) {
+  constructor(route: ArtifactRoute, srcFileURL: URL) {
     super(route, srcFileURL);
   }
 }
@@ -45,47 +51,47 @@ type AstroArtifact =
 const resolveModulePagesArtifact =
   createDynamicGlobArtifactResolver<AstroModulePagesArtifact>(
     "./src/pages/**/*.ts",
-    (ctx) => ctx.projectDirURL,
+    (siteContext) => siteContext.projectDirURL,
   );
 
 const resolveMarkdownPagesArtifact =
   createFactoryGlobArtifactResolver<AstroMarkdownPagesArtifact>(
     "./src/pages/**/*.md",
-    (ctx) => ctx.projectDirURL,
-    (ctx, srcFileURL) =>
+    (siteContext) => siteContext.projectDirURL,
+    (siteContext, srcFileURL) =>
       new AstroMarkdownPagesArtifact(
-        ctx.getArtifactRouteUsingSrcFileURL(srcFileURL),
+        siteContext.getArtifactRouteUsingSrcFileURL(srcFileURL),
         srcFileURL,
       ),
   );
 
-async function resolvePublicArtifact(ctx: AstroPipelineContext) {
+async function resolvePublicArtifact(siteContext: AstroSiteContext) {
   const resolveDynamicGlobArtifact =
     createFactoryGlobArtifactResolver<AstroPublicArtifact>(
       "./public/**",
-      (ctx) => ctx.projectDirURL,
-      (ctx, srcFileURL) =>
+      (siteContext) => siteContext.projectDirURL,
+      (siteContext, srcFileURL) =>
         new SrcFileArtifact(
-          ctx.getArtifactRouteUsingSrcFileURL(srcFileURL),
+          siteContext.getArtifactRouteUsingSrcFileURL(srcFileURL),
           srcFileURL,
         ),
     );
 
-  const publicArtifact = await resolveDynamicGlobArtifact(ctx);
+  const publicArtifact = await resolveDynamicGlobArtifact(siteContext);
 
   return publicArtifact;
 }
 
 async function emitAstroModulePagesArtifact(
-  ctx: AstroPipelineContext,
+  siteContext: AstroSiteContext,
   artifact: AstroModulePagesArtifact,
 ): Promise<void> {
   // TODO type guard
-  const srcContent = await artifact.fetchSrcContent(ctx);
+  const srcContent = await artifact.fetchSrcContent(siteContext);
 
   // TODO transform
 
-  const targetFileURL = ctx.getArtifactTargetFileURL(artifact);
+  const targetFileURL = siteContext.getArtifactTargetFileURL(artifact);
   const targetFilePath = fileURLToPath(targetFileURL);
   const targetFileDir = `${osPathDirname(targetFilePath)}${osPathSep}`;
   const targetFileContent = srcContent.documentElement.outerHTML;
@@ -95,13 +101,13 @@ async function emitAstroModulePagesArtifact(
 }
 
 async function emitAstroMarkdownPagesArtifact(
-  ctx: AstroPipelineContext,
+  siteContext: AstroSiteContext,
   artifact: AstroArtifact,
 ): Promise<void> {
   // TODO type guard
   const srcContent = await (
     artifact as AstroModulePagesArtifact
-  ).fetchSrcContent(ctx);
+  ).fetchSrcContent(siteContext);
 
   const window = new Window();
   const document = window.document;
@@ -122,7 +128,7 @@ async function emitAstroMarkdownPagesArtifact(
 
   await window.happyDOM.waitUntilComplete();
 
-  const targetFileURL = ctx.getArtifactTargetFileURL(artifact);
+  const targetFileURL = siteContext.getArtifactTargetFileURL(artifact);
   const targetFilePath = fileURLToPath(targetFileURL);
   const targetDir = `${osPathDirname(targetFilePath)}${osPathSep}`;
   const targetContent = document.documentElement.outerHTML;
@@ -131,9 +137,9 @@ async function emitAstroMarkdownPagesArtifact(
   await writeFile(targetFileURL, targetContent, "utf-8");
 }
 
-interface AstroPipelineContext extends PipelineContext {}
+interface AstroSiteContext extends ISiteContext {}
 
-function createAstroPipelineContext(packageJsonURL: URL): AstroPipelineContext {
+function createSiteContext(packageJsonURL: URL): AstroSiteContext {
   const projectDirURL = new URL(`${osPathDirname(packageJsonURL.href)}/`);
   const srcDirURL = new URL("./src/", projectDirURL);
   const targetDirURL = new URL("./dist/", projectDirURL);
@@ -169,28 +175,30 @@ function createAstroPipelineContext(packageJsonURL: URL): AstroPipelineContext {
   };
 }
 
-async function runAstroPipeline(ctx: AstroPipelineContext) {
-  await rm(ctx.targetDirURL, { recursive: true, force: true });
-  await mkdir(ctx.targetDirURL, { recursive: true });
+function createSite(): ISite {
+  const artifactProducers = [
+    {
+      resolve: resolveModulePagesArtifact,
+      emit: emitAstroMarkdownPagesArtifact,
+    },
+    {
+      resolve: resolveMarkdownPagesArtifact,
+      emit: emitAstroMarkdownPagesArtifact,
+    },
+    {
+      resolve: resolvePublicArtifact,
+      emit: emitArtifactSrcFileViaCopy,
+    },
+  ];
 
-  const modulePagesArtifact = await resolveModulePagesArtifact(ctx);
-  for (const iModulePageArtifact of modulePagesArtifact) {
-    emitAstroModulePagesArtifact(ctx, iModulePageArtifact);
-  }
-
-  const markdownPagesArtifact = await resolveMarkdownPagesArtifact(ctx);
-  for (const iMarkdownPageArtifact of markdownPagesArtifact) {
-    emitAstroMarkdownPagesArtifact(ctx, iMarkdownPageArtifact);
-  }
-
-  const publicArtifact = await resolvePublicArtifact(ctx);
-  for (const iPublicArtifact of publicArtifact) {
-    emitArtifactSrcFileViaCopy(ctx, iPublicArtifact as AstroPublicArtifact);
-  }
+  return {
+    artifactProducer: artifactProducers,
+  };
 }
 
 export {
-  createAstroPipelineContext,
-  runAstroPipeline,
-  type AstroPipelineContext,
+  createSiteContext,
+  createSite,
+  createSite as default,
+  type AstroSiteContext,
 };

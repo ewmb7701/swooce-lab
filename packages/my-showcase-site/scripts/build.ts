@@ -1,10 +1,8 @@
-import {
-  createShowcasePipelineContext,
-  runShowcasePipeline,
-} from "../src/pipeline.ts";
+import { buildSite } from "@swooce/core";
+import { createSiteContext, createSite } from "../src/site.ts";
 
-const myShowcasePipelineContext = createShowcasePipelineContext(
+const myShowcaseSiteContext = createSiteContext(
   new URL("../package.json", import.meta.url),
 );
-const runMyShowcasePipeline = runShowcasePipeline;
-runMyShowcasePipeline(myShowcasePipelineContext);
+const myShowcaseSite = createSite();
+await buildSite(myShowcaseSiteContext, myShowcaseSite);
