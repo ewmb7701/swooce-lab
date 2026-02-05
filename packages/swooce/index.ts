@@ -1,3 +1,5 @@
+import { Writable } from "node:stream";
+
 type ArtifactRoute = string;
 
 interface IArtifact {
@@ -12,9 +14,10 @@ class Artifact implements IArtifact {
   }
 }
 
-type ArtifactEmitter<TEmitArtifact> = (
+type ArtifactWriter<TArtifact> = (
   siteContext: ISiteContext,
-  artifact: TEmitArtifact,
+  artifact: TArtifact,
+  artifactTargetWritable: Writable,
 ) => Promise<void>;
 
 type ArtifactResolver<TResolvedArtifact> = (
@@ -23,14 +26,22 @@ type ArtifactResolver<TResolvedArtifact> = (
 
 interface IArtifactProducer {
   resolve(ctx: ISiteContext): Promise<IArtifact[]>;
-  emit(ctx: ISiteContext, artifact: IArtifact): Promise<void>;
+  write(
+    ctx: ISiteContext,
+    artifact: IArtifact,
+    artifactTargetWritable: Writable,
+  ): Promise<void>;
 }
 
 interface ArtifactProducer<
   TArtifact extends Artifact,
 > extends IArtifactProducer {
   resolve(ctx: ISiteContext): Promise<TArtifact[]>;
-  emit(ctx: ISiteContext, artifact: TArtifact): Promise<void>;
+  write(
+    ctx: ISiteContext,
+    artifact: TArtifact,
+    artifactTargetWritable: Writable,
+  ): Promise<void>;
 }
 
 /**
@@ -67,13 +78,6 @@ interface ISiteContext {
    * Get the route of an artifact using the src file URL of the artifact.
    */
   getArtifactRouteUsingSrcFileURL: (artifactSrcFileURL: URL) => ArtifactRoute;
-
-  /**
-   * Get the absolute target URL of an artifact.
-   *
-   * eg, from `file:///home/eric/projects/my-cool-website/src/site/pages/posts/post-1.md` to `file:///home/eric/projects/my-cool-website/target/post-1.md.html`.
-   */
-  getArtifactTargetFileURL: (artifact: IArtifact) => URL;
 }
 
 interface ISite {
@@ -85,7 +89,7 @@ export {
   type IArtifact,
   type ArtifactRoute,
   type ArtifactResolver,
-  type ArtifactEmitter,
+  type ArtifactWriter,
   type IArtifactProducer,
   type ArtifactProducer,
   type ISite,

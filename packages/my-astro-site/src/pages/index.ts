@@ -14,11 +14,11 @@ class IndexPageModuleArtifact
 <html>
   <head>
     <title>
-      Index
+      My Astro Site - Index
     </title>
   </head>
   <body>
-    <h1>Index</h1>
+    <h1>My Astro Site - Index</h1>
     <img
       src="/clock-drawing.png"
     />

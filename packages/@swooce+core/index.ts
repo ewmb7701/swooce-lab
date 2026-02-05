@@ -1,13 +1,16 @@
-import { copyFile, mkdir, rm } from "node:fs/promises";
-import { dirname, sep } from "node:path";
+import type { Writable } from "node:stream";
+import { dirname } from "node:path";
+import { createReadStream, createWriteStream } from "node:fs";
+import { mkdir, rm } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { glob } from "glob";
 import {
+  Artifact,
   type IArtifact,
   type ArtifactResolver,
-  type ISiteContext,
-  Artifact,
   type ArtifactRoute,
+  type ArtifactWriter,
+  type ISiteContext,
   type ISite,
 } from "swooce";
 
@@ -109,23 +112,33 @@ function createDynamicGlobArtifactResolver<
   };
 }
 
-/**
- * Artifact emitter which copies the artifact src file to its target file path.
- */
-async function emitArtifactSrcFileViaCopy(
-  siteContext: ISiteContext,
+async function writeArtifactViaCopy(
+  _siteContext: ISiteContext,
   artifact: IArtifact & IArtifactWithSrcFile,
+  artifactTargetWritable: Writable,
 ) {
   const srcFileURL = artifact.srcFileURL;
-
-  const targetFileURL = siteContext.getArtifactTargetFileURL(artifact);
-  const targetFileDir = `${dirname(fileURLToPath(targetFileURL))}${sep}`;
-
-  await mkdir(targetFileDir, { recursive: true });
-  await copyFile(srcFileURL, targetFileURL);
+  const srcReadable = createReadStream(srcFileURL);
+  srcReadable.pipe(artifactTargetWritable);
 }
 
-async function buildSite(
+async function writeArtifactToFs<TArtifact extends IArtifact>(
+  siteContext: ISiteContext,
+  artifact: TArtifact,
+  writeArtifact: ArtifactWriter<TArtifact>,
+) {
+  const artifactTargetFileURL = new URL(
+    `.${artifact.route}`,
+    `${siteContext.targetDirURL}`,
+  );
+  const artifactTargetFileDir = `${dirname(fileURLToPath(artifactTargetFileURL))}`;
+  await mkdir(artifactTargetFileDir, { recursive: true });
+
+  const artifactTargetFileWritable = createWriteStream(artifactTargetFileURL);
+  await writeArtifact(siteContext, artifact, artifactTargetFileWritable);
+}
+
+async function writeSiteToFs(
   siteContext: ISiteContext,
   site: ISite,
 ): Promise<void> {
@@ -137,18 +150,26 @@ async function buildSite(
 
     if (Array.isArray(iResolvedArtifact)) {
       for (const iiResolvedArtifact of iResolvedArtifact) {
-        await iArtifactProducer.emit(siteContext, iiResolvedArtifact);
+        await writeArtifactToFs(
+          siteContext,
+          iiResolvedArtifact,
+          iArtifactProducer.write,
+        );
       }
     } else {
-      await iArtifactProducer.emit(siteContext, iResolvedArtifact);
+      await writeArtifactToFs(
+        siteContext,
+        iResolvedArtifact,
+        iArtifactProducer.write,
+      );
     }
   }
 }
 
 export {
   SrcFileArtifact,
-  buildSite,
-  emitArtifactSrcFileViaCopy,
+  writeSiteToFs,
+  writeArtifactViaCopy,
   createDynamicGlobArtifactResolver,
   createFactoryGlobArtifactResolver,
   type IArtifact,

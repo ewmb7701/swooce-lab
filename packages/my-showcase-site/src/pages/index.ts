@@ -14,11 +14,11 @@ class IndexPageArtifact
 <html>
   <head>
     <title>
-      Index
+      My Showcase Site - Index
     </title>
   </head>
   <body>
-    <h1>Index</h1>
+    <h1>My Showcase Site - Index</h1>
     <img
       src="/clock-drawing.png"
     />

@@ -1,15 +1,14 @@
-import { mkdir, writeFile } from "node:fs/promises";
-import { dirname, sep } from "node:path";
+import type { Writable } from "node:stream";
+import { dirname } from "node:path";
 import { relative as posixRelative } from "node:path/posix";
-import { fileURLToPath } from "node:url";
 import type { Document } from "happy-dom";
 import { type ISite, type ISiteContext } from "swooce";
 import {
   createDynamicGlobArtifactResolver,
   createFactoryGlobArtifactResolver,
-  emitArtifactSrcFileViaCopy,
   SrcFileArtifact,
   type IArtifactWithSrcContent,
+  writeArtifactViaCopy,
 } from "@swooce/core";
 
 type ShowcasePagesArtifact = SrcFileArtifact &
@@ -40,26 +39,14 @@ const resolveStaticArtifact =
       ),
   );
 
-async function emitShowcasePagesArtifact(
+async function writeShowcasePagesArtifact(
   siteContext: ShowcaseSiteContext,
   artifact: ShowcasePagesArtifact,
+  writable: Writable,
 ): Promise<void> {
-  // TODO type guard
   const srcContent = await artifact.fetchSrcContent(siteContext);
-
-  // TODO transform
-
-  const targetContent = srcContent;
-  const targetFileURL = siteContext.getArtifactTargetFileURL(artifact);
-  const targetFilePath = fileURLToPath(targetFileURL);
-  const targetDir = `${dirname(targetFilePath)}${sep}`;
-
-  await mkdir(targetDir, { recursive: true });
-  await writeFile(
-    targetFileURL,
-    targetContent.documentElement.outerHTML,
-    "utf-8",
-  );
+  const targetContent = srcContent.documentElement.outerHTML;
+  writable.write(targetContent);
 }
 
 interface ShowcaseSiteContext extends ISiteContext {}
@@ -90,11 +77,6 @@ function createSiteContext(packageJsonURL: URL): ShowcaseSiteContext {
         );
       }
     },
-    getArtifactTargetFileURL: function (artifact): URL {
-      const artifactRoute = artifact.route;
-
-      return new URL(`.${artifactRoute}`, `${this.targetDirURL}`);
-    },
   };
 }
 
@@ -102,11 +84,11 @@ function createSite(): ISite {
   const artifactProducer = [
     {
       resolve: resolvePagesArtifact,
-      emit: emitShowcasePagesArtifact,
+      write: writeShowcasePagesArtifact,
     },
     {
       resolve: resolveStaticArtifact,
-      emit: emitArtifactSrcFileViaCopy,
+      write: writeArtifactViaCopy,
     },
   ];
 

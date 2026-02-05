@@ -6,7 +6,7 @@
 
 `swooce` is a low-level library of primitives for composing build pipelines for web projects.
 
-It provides unopinionated abstractions for resolving artifacts, constructing module graphs, and emitting output.
+It provides unopinionated abstractions for resolving artifacts, constructing module graphs, and writeting output.
 
 # Usage
 
@@ -32,9 +32,9 @@ Examples include:
 - A `my-custom-site/IndexPageArtifact` for `src/site/pages/index.ts`
 - A `@swooce/core/Artifact` for `src/site/assets/images/clock-drawing.png`
 
-## ArtifactEmitter
+## ArtifactWriter
 
-Responsible for emitting the output representation of an artifact into a target directory.
+Responsible for writeting the output representation of an artifact into a target directory.
 
 ## ArtifactResolver
 
@@ -45,7 +45,7 @@ Resolvers operate exclusively on the filesystem. They locate concrete source fil
 Key properties of resolvers in swooce:
 
 - **File-backed only**: every resolved artifact corresponds to a real file on disk
-- **Pure discovery**: resolvers do not emit output or perform transformations
+- **Pure discovery**: resolvers do not write output or perform transformations
 - **Composable**: resolvers may delegate to or invoke other resolvers
 - **Explicit**: resolution order and structure are defined by the pipeline, not inferred implicitly
 
@@ -72,11 +72,11 @@ Pipelines define opinionated build behavior built on top of `swooce` core.
 
 A pipeline defines:
 
-- Execution order: the sequence in which resolvers and emitters are invoked
-- Selection of resolvers and emitters to run
-- Coordination of artifact flow from resolvers to emitters
+- Execution order: the sequence in which resolvers and writers are invoked
+- Selection of resolvers and writers to run
+- Coordination of artifact flow from resolvers to writers
 
-Pipelines orchestrate resolvers and emitters but do not define _how_ artifacts are resolved or emitted; those policies are defined in the `SiteContext`.
+Pipelines orchestrate resolvers and writers but do not define _how_ artifacts are resolved or writeted; those policies are defined in the `SiteContext`.
 
 This `swooce` package itself does not provide a pipeline.
 
@@ -84,9 +84,9 @@ This `swooce` package itself does not provide a pipeline.
 
 The `SiteContext` provides shared, read-only policy and coordination data for a pipeline run.
 
-It represents the execution environment in which resolvers and emitters operate. Rather than hard-coding assumptions about project layout, routing, or emission behavior, `swooce` passes this information explicitly via the `SiteContext`.
+It represents the execution environment in which resolvers and writers operate. Rather than hard-coding assumptions about project layout, routing, or emission behavior, `swooce` passes this information explicitly via the `SiteContext`.
 
-Resolvers and emitters receive the `SiteContext` as an explicit parameter and must not rely on global state.
+Resolvers and writers receive the `SiteContext` as an explicit parameter and must not rely on global state.
 
 The `SiteContext` is created by the build script and is immutable for the duration of the run.
 
@@ -103,7 +103,7 @@ A pipeline context:
 A pipeline context does **not**:
 
 - perform resolution
-- emit artifacts
+- write artifacts
 - own lifecycle or execution order
 - contain mutable build state
 

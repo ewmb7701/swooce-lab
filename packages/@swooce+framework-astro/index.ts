@@ -1,4 +1,5 @@
-import { mkdir, rm, writeFile } from "node:fs/promises";
+import { Writable } from "node:stream";
+import { mkdir, writeFile } from "node:fs/promises";
 import { dirname as osPathDirname, sep as osPathSep } from "node:path";
 import { relative as posixRelative } from "node:path/posix";
 import { fileURLToPath } from "node:url";
@@ -6,14 +7,13 @@ import { Document, Window } from "happy-dom";
 import {
   type ArtifactRoute,
   type IArtifact,
-  type IArtifactProducer,
   type ISite,
   type ISiteContext,
 } from "swooce";
 import {
   createDynamicGlobArtifactResolver,
   createFactoryGlobArtifactResolver,
-  emitArtifactSrcFileViaCopy,
+  writeArtifactViaCopy,
   SrcFileArtifact,
   type IArtifactWithSrcContent,
   type IArtifactWithSrcFile,
@@ -82,27 +82,21 @@ async function resolvePublicArtifact(siteContext: AstroSiteContext) {
   return publicArtifact;
 }
 
-async function emitAstroModulePagesArtifact(
+async function writeAstroModulePagesArtifact(
   siteContext: AstroSiteContext,
   artifact: AstroModulePagesArtifact,
+  artifactTargetWritable: Writable,
 ): Promise<void> {
-  // TODO type guard
   const srcContent = await artifact.fetchSrcContent(siteContext);
-
   // TODO transform
-
-  const targetFileURL = siteContext.getArtifactTargetFileURL(artifact);
-  const targetFilePath = fileURLToPath(targetFileURL);
-  const targetFileDir = `${osPathDirname(targetFilePath)}${osPathSep}`;
-  const targetFileContent = srcContent.documentElement.outerHTML;
-
-  await mkdir(targetFileDir, { recursive: true });
-  await writeFile(targetFileURL, targetFileContent, "utf-8");
+  const targetContent = srcContent.documentElement.outerHTML;
+  artifactTargetWritable.write(targetContent);
 }
 
-async function emitAstroMarkdownPagesArtifact(
+async function writeAstroMarkdownPagesArtifact(
   siteContext: AstroSiteContext,
   artifact: AstroArtifact,
+  artifactTargetWritable: Writable,
 ): Promise<void> {
   // TODO type guard
   const srcContent = await (
@@ -128,13 +122,7 @@ async function emitAstroMarkdownPagesArtifact(
 
   await window.happyDOM.waitUntilComplete();
 
-  const targetFileURL = siteContext.getArtifactTargetFileURL(artifact);
-  const targetFilePath = fileURLToPath(targetFileURL);
-  const targetDir = `${osPathDirname(targetFilePath)}${osPathSep}`;
-  const targetContent = document.documentElement.outerHTML;
-
-  await mkdir(targetDir, { recursive: true });
-  await writeFile(targetFileURL, targetContent, "utf-8");
+  artifactTargetWritable.write(documentHTML);
 }
 
 interface AstroSiteContext extends ISiteContext {}
@@ -164,11 +152,6 @@ function createSiteContext(packageJsonURL: URL): AstroSiteContext {
         );
       }
     },
-    getArtifactTargetFileURL: function (artifact): URL {
-      const artifactRoute = artifact.route;
-
-      return new URL(`.${artifactRoute}`, `${this.targetDirURL}`);
-    },
     projectDirURL: projectDirURL,
     srcDirURL: srcDirURL,
     targetDirURL: targetDirURL,
@@ -179,15 +162,15 @@ function createSite(): ISite {
   const artifactProducers = [
     {
       resolve: resolveModulePagesArtifact,
-      emit: emitAstroMarkdownPagesArtifact,
+      write: writeAstroModulePagesArtifact,
     },
     {
       resolve: resolveMarkdownPagesArtifact,
-      emit: emitAstroMarkdownPagesArtifact,
+      write: writeAstroMarkdownPagesArtifact,
     },
     {
       resolve: resolvePublicArtifact,
-      emit: emitArtifactSrcFileViaCopy,
+      write: writeArtifactViaCopy,
     },
   ];
 
