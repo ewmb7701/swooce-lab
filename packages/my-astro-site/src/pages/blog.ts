@@ -1,6 +1,6 @@
-import { Window, Document } from "happy-dom";
 import { glob } from "glob";
-import { Artifact, ArtifactResolver, type PipelineContext } from "swooce";
+import { Window, Document } from "happy-dom";
+import { Artifact, type PipelineContext } from "swooce";
 import type { IArtifactWithSrcFileContent } from "@swooce/core";
 
 class BlogPageModuleArtifact
@@ -48,23 +48,21 @@ class BlogPageModuleArtifact
   }
 }
 
-export default class extends ArtifactResolver<BlogPageModuleArtifact> {
-  override async resolve(_ctx: PipelineContext) {
-    // resolve artifact dependencies
-    const allPostArtifactSrcFileRelativePath = await glob(`./post/*.md`, {
-      cwd: import.meta.dir,
-      posix: true,
-      dotRelative: true,
+export default async function (ctx: PipelineContext) {
+  // resolve artifact dependencies
+  const allPostArtifactSrcFileRelativePath = await glob(`./post/*.md`, {
+    cwd: import.meta.dir,
+    posix: true,
+    dotRelative: true,
+  });
+
+  const allPostArtifactSrcFileRelativeURL =
+    allPostArtifactSrcFileRelativePath.map((iPostPageSrcFileRelativePath) => {
+      return new URL(import.meta.resolve(iPostPageSrcFileRelativePath));
     });
 
-    const allPostArtifactSrcFileRelativeURL =
-      allPostArtifactSrcFileRelativePath.map((iPostPageSrcFileRelativePath) => {
-        return new URL(import.meta.resolve(iPostPageSrcFileRelativePath));
-      });
-
-    return new BlogPageModuleArtifact(
-      new URL(import.meta.url),
-      allPostArtifactSrcFileRelativeURL,
-    );
-  }
+  return new BlogPageModuleArtifact(
+    new URL(import.meta.url),
+    allPostArtifactSrcFileRelativeURL,
+  );
 }

@@ -1,5 +1,5 @@
 import { Document, Window } from "happy-dom";
-import { Artifact, ArtifactResolver, type PipelineContext } from "swooce";
+import { Artifact, type PipelineContext } from "swooce";
 import type { IArtifactWithSrcFileContent } from "@swooce/core";
 
 class IndexPageModuleArtifact
@@ -36,10 +36,6 @@ class IndexPageModuleArtifact
   }
 }
 
-export default class extends ArtifactResolver<IndexPageModuleArtifact> {
-  override resolve(_ctx: PipelineContext) {
-    return Promise.resolve(
-      new IndexPageModuleArtifact(new URL(import.meta.url)),
-    );
-  }
+export default function resolve(_ctx: PipelineContext) {
+  return Promise.resolve(new IndexPageModuleArtifact(new URL(import.meta.url)));
 }

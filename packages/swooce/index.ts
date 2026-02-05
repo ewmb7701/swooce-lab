@@ -11,12 +11,21 @@ class Artifact {
   }
 }
 
+type ArtifactEmitter<TArtifact extends Artifact = Artifact> = (
+  ctx: PipelineContext,
+  artifact: TArtifact,
+) => Promise<void>;
+
+type ArtifactResolver<TArtifact extends Artifact = Artifact> = (
+  ctx: PipelineContext,
+) => Promise<TArtifact | Array<TArtifact>>;
+
 /**
  * Site-wide context shared between all primitives, like project paths and resolvers.
  *
  * Provided to all primitives.
  */
-interface PipelineContext {
+interface PipelineContext<TArtifact extends Artifact = Artifact> {
   /**
    * The absolute URL of the site project directory.
    *
@@ -51,34 +60,23 @@ interface PipelineContext {
    *
    * eg, from `file:///home/eric/projects/my-cool-website/src/document/posts/post-1.md` to `file:///home/eric/projects/my-cool-website/target/document/posts/post-1.md`.
    */
-  getArtifactTargetFileURL: (ctx: this, artifact: Artifact) => URL;
+  getArtifactTargetFileURL: (ctx: this, artifact: TArtifact) => URL;
 
-  getArtifactEmitter: (ctx: this, artifact: Artifact) => ArtifactEmitter;
+  getArtifactEmitter: (
+    ctx: this,
+    artifact: TArtifact,
+  ) => ArtifactEmitter<TArtifact>;
 }
 
-abstract class ArtifactEmitter<TArtifact extends Artifact = Artifact> {
-  /**
-   * Emit site files to target directory.
-   * The emitted public site files are the final build artifacts.
-   */
-  abstract emit(ctx: PipelineContext, artifact: TArtifact): Promise<void>;
-}
-
-abstract class ArtifactResolver<TArtifact extends Artifact = Artifact> {
-  /**
-   * Returns an array.
-   */
-  abstract resolve(ctx: PipelineContext): Promise<TArtifact | Array<TArtifact>>;
-}
-
-abstract class Pipeline<TPipelineContext extends PipelineContext> {
-  abstract run(ctx: TPipelineContext): Promise<void>;
-}
+type Pipeline<
+  TPipelineContext extends PipelineContext<TArtifact>,
+  TArtifact extends Artifact = Artifact,
+> = (ctx: TPipelineContext) => Promise<void>;
 
 export {
   Artifact,
-  ArtifactResolver,
-  ArtifactEmitter,
-  Pipeline,
+  type ArtifactResolver,
+  type ArtifactEmitter,
+  type Pipeline,
   type PipelineContext,
 };

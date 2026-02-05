@@ -1,7 +1,7 @@
 import { Document, Window } from "happy-dom";
 import { Artifact, type PipelineContext } from "swooce";
 import {
-  FactoryGlobArtifactResolver,
+  createFactoryGlobArtifactResolver,
   type IArtifactWithSrcFileContent,
 } from "@swooce/core";
 import { pathToFileURL } from "node:url";
@@ -44,7 +44,7 @@ class PostPageArtifact
   }
 }
 
-export default FactoryGlobArtifactResolver(
+export default createFactoryGlobArtifactResolver(
   pathToFileURL(`${import.meta.dir}${sep}`),
   "./post/*.md",
   (url) => new PostPageArtifact(url),

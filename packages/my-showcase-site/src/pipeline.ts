@@ -1,88 +1,71 @@
-import { mkdir, rm, writeFile } from "fs/promises";
-import { dirname, sep } from "path";
-import { relative as posixRelative } from "path/posix";
-import { fileURLToPath } from "url";
+import { mkdir, rm, writeFile } from "node:fs/promises";
+import { dirname, sep } from "node:path";
+import { relative as posixRelative } from "node:path/posix";
+import { fileURLToPath } from "node:url";
 import type { Document } from "happy-dom";
+import { Artifact, type PipelineContext } from "swooce";
 import {
-  Artifact,
-  ArtifactResolver,
-  Pipeline,
-  type PipelineContext,
-} from "swooce";
-import {
-  ContentArtifactEmitter,
-  CopyFileArtifactEmitter,
-  DyamicGlobArtifactResolver,
-  FactoryGlobArtifactResolver,
+  createDynamicGlobArtifactResolver,
+  createFactoryGlobArtifactResolver,
+  emitFileArtifactViaCopy,
   type IArtifactWithSrcFileContent,
 } from "@swooce/core";
 
-class ShowcaseModulePagesArtifactResolver extends ArtifactResolver<
-  Artifact & IArtifactWithSrcFileContent<Document>
-> {
-  override async resolve(ctx: PipelineContext) {
-    const ModulePagesArtifactResolver = DyamicGlobArtifactResolver(
-      ctx.projectDirURL,
-      "./src/site/pages/**/*.ts",
-    );
+type ShowcasePagesArtifact = Artifact & IArtifactWithSrcFileContent<Document>;
+type ShowcaseStaticArtifact = Artifact;
+type ShowcaseArtifact = ShowcasePagesArtifact | ShowcaseStaticArtifact;
 
-    const modulePagesArtifactResolver = new ModulePagesArtifactResolver();
-    const allModulePagesArtifact = (await modulePagesArtifactResolver.resolve(
-      ctx,
-    )) as Array<Artifact & IArtifactWithSrcFileContent<Document>>;
+async function resolvePagesArtifact(ctx: ShowcasePipelineContext) {
+  const resolveDynamicGlobArtifact = createDynamicGlobArtifactResolver(
+    ctx.projectDirURL,
+    "./src/site/pages/**/*.ts",
+  );
 
-    return allModulePagesArtifact;
-  }
+  const pagesArtifact = (await resolveDynamicGlobArtifact(ctx)) as Array<
+    Artifact & IArtifactWithSrcFileContent<Document>
+  >;
+
+  return pagesArtifact;
 }
 
-class ShowcaseStaticArtifactResolver extends ArtifactResolver<Artifact> {
-  override async resolve(ctx: PipelineContext) {
-    const StaticArtifactResolver = FactoryGlobArtifactResolver(
-      ctx.projectDirURL,
-      "./src/site/static/**",
-      (srcFileURL) => new Artifact(srcFileURL),
-    );
+async function resolveStaticArtifact(ctx: ShowcasePipelineContext) {
+  const resolveDynamicGlobArtifact = createFactoryGlobArtifactResolver(
+    ctx.projectDirURL,
+    "./src/site/static/**",
+    (srcFileURL) => new Artifact(srcFileURL),
+  );
 
-    const publicArtifactResolver = new StaticArtifactResolver();
-    const allPublicArtifact = await publicArtifactResolver.resolve(ctx);
+  const staticArtifact = (await resolveDynamicGlobArtifact(ctx)) as Array<
+    Artifact & IArtifactWithSrcFileContent<Document>
+  >;
 
-    return allPublicArtifact;
-  }
+  return staticArtifact;
+}
+async function emitShowcasePagesArtifact(
+  ctx: ShowcasePipelineContext,
+  artifact: ShowcaseArtifact,
+): Promise<void> {
+  // TODO type guard
+  const srcContent = await (
+    artifact as ShowcasePagesArtifact
+  ).fetchSrcFileContent(ctx);
+
+  // TODO transform
+
+  const targetContent = srcContent;
+  const targetFileURL = ctx.getArtifactTargetFileURL(ctx, artifact);
+  const targetFilePath = fileURLToPath(targetFileURL);
+  const targetDir = `${dirname(targetFilePath)}${sep}`;
+
+  await mkdir(targetDir, { recursive: true });
+  await writeFile(
+    targetFileURL,
+    targetContent.documentElement.outerHTML,
+    "utf-8",
+  );
 }
 
-/**
- * {@link ContentArtifactEmitter} for {@link Document} to {@link Document} with standard transform.
- */
-class ShowcaseDocumentArtifactEmitter extends ContentArtifactEmitter<
-  Artifact & IArtifactWithSrcFileContent<Document>
-> {
-  override transform(
-    _ctx: PipelineContext,
-    _artifact: Artifact & IArtifactWithSrcFileContent<Document>,
-    srcContent: Document,
-  ): Promise<Document> {
-    return Promise.resolve(srcContent);
-  }
-
-  protected async writeTargetFileContent(
-    ctx: PipelineContext,
-    artifact: Artifact,
-    content: Document,
-  ) {
-    const targetFileURL = ctx.getArtifactTargetFileURL(ctx, artifact);
-    const targetFilePath = fileURLToPath(targetFileURL);
-    const targetDir = `${dirname(targetFilePath)}${sep}`;
-
-    await mkdir(targetDir, { recursive: true });
-    await writeFile(targetFileURL, content.documentElement.outerHTML, "utf-8");
-  }
-
-  constructor() {
-    super();
-  }
-}
-
-interface ShowcasePipelineContext extends PipelineContext {}
+interface ShowcasePipelineContext extends PipelineContext<ShowcaseArtifact> {}
 
 function createShowcasePipelineContext(
   packageJsonURL: URL,
@@ -93,7 +76,7 @@ function createShowcasePipelineContext(
 
   return {
     getArtifactRoute: function (
-      ctx: PipelineContext,
+      ctx: ShowcasePipelineContext,
       artifactSrcFileURL: URL,
     ): string {
       // get relative path of artifact wrt to project dir
@@ -117,7 +100,7 @@ function createShowcasePipelineContext(
       }
     },
     getArtifactTargetFileURL: function (
-      ctx: PipelineContext,
+      ctx: ShowcasePipelineContext,
       artifact: Artifact,
     ): URL {
       const artifactRoute = this.getArtifactRoute(ctx, artifact.srcFileURL);
@@ -128,41 +111,35 @@ function createShowcasePipelineContext(
       const artifactRoute = ctx.getArtifactRoute(ctx, artifact.srcFileURL);
 
       if (artifactRoute.endsWith(".ts.html")) {
-        return new ShowcaseDocumentArtifactEmitter();
+        return emitShowcasePagesArtifact;
       }
 
       // fallback to copy
-      return new CopyFileArtifactEmitter();
+      return emitFileArtifactViaCopy;
     },
     projectDirURL: projectDirURL,
     srcDirURL: srcDirURL,
     targetDirURL: targetDirURL,
-  } satisfies PipelineContext;
+  };
 }
 
-class ShowcasePipeline extends Pipeline<ShowcasePipelineContext> {
-  override async run(ctx: ShowcasePipelineContext): Promise<void> {
-    await rm(ctx.targetDirURL, { recursive: true, force: true });
-    await mkdir(ctx.targetDirURL, { recursive: true });
+async function runShowcasePipeline(ctx: ShowcasePipelineContext) {
+  await rm(ctx.targetDirURL, { recursive: true, force: true });
+  await mkdir(ctx.targetDirURL, { recursive: true });
 
-    const pageArtifactResolver = new ShowcaseModulePagesArtifactResolver();
-    const pageArtifact = await pageArtifactResolver.resolve(ctx);
+  const pageArtifact = await resolvePagesArtifact(ctx);
+  const staticArtifact = await resolveStaticArtifact(ctx);
 
-    const staticArtifactResolver = new ShowcaseStaticArtifactResolver();
-    const staticArtifact = await staticArtifactResolver.resolve(ctx);
+  const siteArtifact = [...pageArtifact, ...staticArtifact];
 
-    const siteArtifact = [...pageArtifact, ...staticArtifact];
-
-    // emit module pages artifacts
-    for (const iArtifact of siteArtifact) {
-      const iArtifactEmitter = ctx.getArtifactEmitter(ctx, iArtifact);
-      await iArtifactEmitter.emit(ctx, iArtifact);
-    }
+  for (const iArtifact of siteArtifact) {
+    const emitArtifact = ctx.getArtifactEmitter(ctx, iArtifact);
+    await emitArtifact(ctx, iArtifact);
   }
 }
 
 export {
   createShowcasePipelineContext,
-  ShowcasePipeline,
+  runShowcasePipeline,
   type ShowcasePipelineContext,
 };
