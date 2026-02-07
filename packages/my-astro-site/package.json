@@ -3,19 +3,23 @@
   "type": "module",
   "private": true,
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "@types/express": "^5.0.6",
+    "express": "^5.2.1"
   },
   "peerDependencies": {
     "typescript": "^5"
   },
   "dependencies": {
     "@swooce/core": "workspace:*",
+    "@swooce/express": "workspace:*",
     "@swooce/framework-astro": "workspace:*",
     "glob": "^13.0.0",
     "happy-dom": "^20.4.0",
     "swooce": "workspace:*"
   },
   "scripts": {
+    "start": "bun run ./scripts/start.ts",
     "build": "bun run ./scripts/build.ts",
     "preview": "bunx http-server ./dist/"
   }

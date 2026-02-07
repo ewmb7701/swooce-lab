@@ -41,8 +41,13 @@ export default function resolve(siteContext: ISiteContext) {
   const artifactRoute = siteContext.getArtifactRouteUsingSrcFileURL(
     new URL(import.meta.url),
   );
+  const artifactMimeType = "text/html";
 
   return Promise.resolve(
-    new IndexPageModuleArtifact(artifactRoute, artifactSrcFileURL),
+    new IndexPageModuleArtifact(
+      artifactRoute,
+      artifactMimeType,
+      artifactSrcFileURL,
+    ),
   );
 }

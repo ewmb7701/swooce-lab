@@ -48,7 +48,7 @@ class BlogPageModuleArtifact
     srcFileURL: URL,
     allPostPageArtifactSrcURL: URL[],
   ) {
-    super(route, srcFileURL);
+    super(route, "text/html", srcFileURL);
     this.allPostPageArtifactSrcURL = allPostPageArtifactSrcURL;
   }
 }

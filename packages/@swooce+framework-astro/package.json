@@ -4,7 +4,8 @@
   "type": "module",
   "private": true,
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "@types/mime-types": "^3.0.1"
   },
   "peerDependencies": {
     "typescript": "^5"
@@ -12,6 +13,7 @@
   "dependencies": {
     "@swooce/core": "workspace:*",
     "happy-dom": "^20.5.0",
+    "mime-types": "^3.0.2",
     "swooce": "workspace:*"
   }
 }

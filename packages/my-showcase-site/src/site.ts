@@ -1,6 +1,7 @@
 import type { Writable } from "node:stream";
 import { dirname } from "node:path";
 import { relative as posixRelative } from "node:path/posix";
+import { lookup as getMimeType } from "mime-types";
 import type { Document } from "happy-dom";
 import { type ISite, type ISiteContext } from "swooce";
 import {
@@ -32,11 +33,15 @@ const resolveStaticArtifact =
   createFactoryGlobArtifactResolver<ShowcaseStaticArtifact>(
     "./src/static/**",
     (siteContext) => siteContext.projectDirURL,
-    (siteContext, srcFileURL) =>
-      new SrcFileArtifact(
-        siteContext.getArtifactRouteUsingSrcFileURL(srcFileURL),
-        srcFileURL,
-      ),
+    (siteContext, srcFileURL) => {
+      const srcFilePath = srcFileURL.href;
+      const route = siteContext.getArtifactRouteUsingSrcFileURL(srcFileURL);
+      const mimeType = getMimeType(srcFilePath) || null;
+
+      const artifact = new SrcFileArtifact(route, mimeType, srcFileURL);
+
+      return artifact;
+    },
   );
 
 async function writeShowcasePagesArtifact(

@@ -41,7 +41,7 @@ class PostPageArtifact
   }
 
   constructor(route: ArtifactRoute, srcFileURL: URL) {
-    super(route, srcFileURL);
+    super(route, "text/html", srcFileURL);
   }
 }
 

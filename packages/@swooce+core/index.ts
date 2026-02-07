@@ -1,4 +1,5 @@
-import type { Writable } from "node:stream";
+import { type Writable } from "node:stream";
+import { pipeline } from "node:stream/promises";
 import { dirname } from "node:path";
 import { createReadStream, createWriteStream } from "node:fs";
 import { mkdir, rm } from "node:fs/promises";
@@ -36,8 +37,8 @@ class SrcFileArtifact
 {
   readonly srcFileURL: URL;
 
-  constructor(route: ArtifactRoute, srcFileURL: URL) {
-    super(route);
+  constructor(route: ArtifactRoute, mimeType: string | null, srcFileURL: URL) {
+    super(route, mimeType);
     this.srcFileURL = srcFileURL;
   }
 }
@@ -119,7 +120,7 @@ async function writeArtifactViaCopy(
 ) {
   const srcFileURL = artifact.srcFileURL;
   const srcReadable = createReadStream(srcFileURL);
-  srcReadable.pipe(artifactTargetWritable);
+  await pipeline(srcReadable, artifactTargetWritable);
 }
 
 async function writeArtifactToFs<TArtifact extends IArtifact>(
@@ -148,18 +149,10 @@ async function writeSiteToFs(
   for (const iArtifactProducer of site.artifactProducer) {
     const iResolvedArtifact = await iArtifactProducer.resolve(siteContext);
 
-    if (Array.isArray(iResolvedArtifact)) {
-      for (const iiResolvedArtifact of iResolvedArtifact) {
-        await writeArtifactToFs(
-          siteContext,
-          iiResolvedArtifact,
-          iArtifactProducer.write,
-        );
-      }
-    } else {
+    for (const iiResolvedArtifact of iResolvedArtifact) {
       await writeArtifactToFs(
         siteContext,
-        iResolvedArtifact,
+        iiResolvedArtifact,
         iArtifactProducer.write,
       );
     }

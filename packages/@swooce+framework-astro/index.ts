@@ -1,8 +1,7 @@
 import { Writable } from "node:stream";
-import { mkdir, writeFile } from "node:fs/promises";
-import { dirname as osPathDirname, sep as osPathSep } from "node:path";
+import { dirname as osPathDirname } from "node:path";
 import { relative as posixRelative } from "node:path/posix";
-import { fileURLToPath } from "node:url";
+import { lookup as getMimeType } from "mime-types";
 import { Document, Window } from "happy-dom";
 import {
   type ArtifactRoute,
@@ -37,7 +36,7 @@ class AstroMarkdownPagesArtifact
   }
 
   constructor(route: ArtifactRoute, srcFileURL: URL) {
-    super(route, srcFileURL);
+    super(route, "text/html", srcFileURL);
   }
 }
 
@@ -70,11 +69,15 @@ async function resolvePublicArtifact(siteContext: AstroSiteContext) {
     createFactoryGlobArtifactResolver<AstroPublicArtifact>(
       "./public/**",
       (siteContext) => siteContext.projectDirURL,
-      (siteContext, srcFileURL) =>
-        new SrcFileArtifact(
-          siteContext.getArtifactRouteUsingSrcFileURL(srcFileURL),
-          srcFileURL,
-        ),
+      (siteContext, srcFileURL) => {
+        const srcFilePath = srcFileURL.href;
+        const route = siteContext.getArtifactRouteUsingSrcFileURL(srcFileURL);
+        const mimeType = getMimeType(srcFilePath) || null;
+
+        const artifact = new SrcFileArtifact(route, mimeType, srcFileURL);
+
+        return artifact;
+      },
     );
 
   const publicArtifact = await resolveDynamicGlobArtifact(siteContext);

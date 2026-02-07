@@ -4,13 +4,16 @@ type ArtifactRoute = string;
 
 interface IArtifact {
   readonly route: ArtifactRoute;
+  readonly mimeType: string | null;
 }
 
 class Artifact implements IArtifact {
   readonly route: ArtifactRoute;
+  readonly mimeType: string | null;
 
-  constructor(route: ArtifactRoute) {
+  constructor(route: ArtifactRoute, mimeType: string | null) {
     this.route = route;
+    this.mimeType = mimeType;
   }
 }
 
@@ -25,21 +28,10 @@ type ArtifactResolver<TResolvedArtifact> = (
 ) => Promise<Array<TResolvedArtifact>>;
 
 interface IArtifactProducer {
-  resolve(ctx: ISiteContext): Promise<IArtifact[]>;
+  resolve(ctx: ISiteContext): Promise<ReadonlyArray<IArtifact>>;
   write(
     ctx: ISiteContext,
     artifact: IArtifact,
-    artifactTargetWritable: Writable,
-  ): Promise<void>;
-}
-
-interface ArtifactProducer<
-  TArtifact extends Artifact,
-> extends IArtifactProducer {
-  resolve(ctx: ISiteContext): Promise<TArtifact[]>;
-  write(
-    ctx: ISiteContext,
-    artifact: TArtifact,
     artifactTargetWritable: Writable,
   ): Promise<void>;
 }
@@ -84,6 +76,45 @@ interface ISite {
   readonly artifactProducer: Array<IArtifactProducer>;
 }
 
+interface ISiteIndexEntry {
+  readonly artifact: IArtifact;
+  readonly producer: IArtifactProducer;
+}
+
+interface ISiteIndex {
+  readonly entriesByRoute: Record<ArtifactRoute, ISiteIndexEntry>;
+}
+
+async function createSiteIndex(
+  ctx: ISiteContext,
+  site: Readonly<ISite>,
+): Promise<ISiteIndex> {
+  const entries = (
+    await Promise.all(
+      site.artifactProducer.map(async (producer) => {
+        const artifacts = await producer.resolve(ctx);
+
+        const iiSiteIndexEntry = artifacts.map(
+          (artifact) =>
+            [
+              artifact.route,
+              {
+                artifact,
+                producer,
+              } as const satisfies ISiteIndexEntry,
+            ] as const,
+        );
+
+        return iiSiteIndexEntry;
+      }),
+    )
+  ).flat();
+
+  return {
+    entriesByRoute: Object.fromEntries(entries),
+  };
+}
+
 export {
   Artifact,
   type IArtifact,
@@ -91,7 +122,9 @@ export {
   type ArtifactResolver,
   type ArtifactWriter,
   type IArtifactProducer,
-  type ArtifactProducer,
   type ISite,
+  type ISiteIndex,
+  type ISiteIndexEntry,
   type ISiteContext,
+  createSiteIndex,
 };
