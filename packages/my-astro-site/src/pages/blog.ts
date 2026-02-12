@@ -1,24 +1,40 @@
+import { Readable } from "node:stream";
+import { relative as posixRelative } from "node:path/posix";
 import { glob } from "glob";
-import { Window, Document } from "happy-dom";
-import { type ISiteContext, type ArtifactRoute } from "swooce";
-import { SrcFileArtifact, type IArtifactWithSrcContent } from "@swooce/core";
+import { Window } from "happy-dom";
+import {
+  type ISiteContext,
+  type ArtifactRoute,
+  type IArtifactProducer,
+} from "swooce";
+import { ArtifactWithSrcFile, writeViaPipeline } from "@swooce/core";
 
-class BlogPageModuleArtifact
-  extends SrcFileArtifact
-  implements IArtifactWithSrcContent<Document>
-{
+class BlogPageArtifact extends ArtifactWithSrcFile {
   readonly allPostPageArtifactSrcURL: URL[];
 
-  async fetchSrcContent(siteContext: ISiteContext): Promise<Document> {
-    // create document content
-    const documentContentAllPostPageHTMLListItems =
-      this.allPostPageArtifactSrcURL.map((iArtifactSrcFileURL) => {
-        const iDocumentRoute =
-          siteContext.getArtifactRouteUsingSrcFileURL(iArtifactSrcFileURL);
+  constructor(
+    route: ArtifactRoute,
+    srcFileURL: URL,
+    allPostPageArtifactSrcURL: URL[],
+  ) {
+    super(route, "text/html", srcFileURL);
+    this.allPostPageArtifactSrcURL = allPostPageArtifactSrcURL;
+  }
+}
 
-        return `<li><a href="${iDocumentRoute}">${iDocumentRoute}</a></li>`;
-      });
-    const contentDocumentHTML = `
+async function read(
+  _siteContext: ISiteContext,
+  artifact: BlogPageArtifact,
+): Promise<Readable> {
+  const window = new Window();
+  const document = window.document;
+
+  const documentContentAllPostPageHTMLListItems =
+    artifact.allPostPageArtifactSrcURL.map((iArtifactSrcRelativeFileURL) => {
+      return `<li><a href="${iArtifactSrcRelativeFileURL}">${iArtifactSrcRelativeFileURL}</a></li>`;
+    });
+
+  const contentDocumentHTML = `
 <!DOCTYPE html>
 <html>
   <head>
@@ -34,27 +50,15 @@ class BlogPageModuleArtifact
   </body>
 </html>
 `;
-    const window = new Window();
-    const document = window.document;
-    document.write(contentDocumentHTML);
+  document.write(contentDocumentHTML);
 
-    await window.happyDOM.waitUntilComplete();
+  await window.happyDOM.waitUntilComplete();
 
-    return document;
-  }
-
-  constructor(
-    route: ArtifactRoute,
-    srcFileURL: URL,
-    allPostPageArtifactSrcURL: URL[],
-  ) {
-    super(route, "text/html", srcFileURL);
-    this.allPostPageArtifactSrcURL = allPostPageArtifactSrcURL;
-  }
+  return Readable.from(contentDocumentHTML);
 }
 
-export default async function (siteContext: ISiteContext) {
-  // resolve artifact dependencies
+async function scan(siteContext: ISiteContext) {
+  // find artifact dependencies
   const allPostArtifactSrcFileRelativePath = await glob(`./post/*.md`, {
     cwd: import.meta.dir,
     posix: true,
@@ -65,15 +69,21 @@ export default async function (siteContext: ISiteContext) {
     allPostArtifactSrcFileRelativePath.map((iPostPageSrcFileRelativePath) => {
       return new URL(import.meta.resolve(iPostPageSrcFileRelativePath));
     });
-
-  const artifactRoute = siteContext.getArtifactRouteUsingSrcFileURL(
-    new URL(import.meta.url),
-  );
-  const artifactSrcFileURL = new URL(import.meta.url);
-
-  return new BlogPageModuleArtifact(
-    artifactRoute,
-    artifactSrcFileURL,
+  const srcFileURL = new URL(import.meta.url);
+  const route = `/${posixRelative(`${siteContext.projectDirURL.href}/src/pages/`, srcFileURL.href)}.html`;
+  const artifact = new BlogPageArtifact(
+    route,
+    srcFileURL,
     allPostArtifactSrcFileRelativeURL,
   );
+
+  return Promise.resolve([artifact]);
 }
+
+const producer = {
+  scan,
+  read,
+  write: writeViaPipeline,
+} satisfies IArtifactProducer;
+
+export { scan, read, producer, producer as default };

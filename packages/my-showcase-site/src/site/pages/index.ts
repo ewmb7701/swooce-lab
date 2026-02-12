@@ -4,11 +4,17 @@ import { Window } from "happy-dom";
 import { type IArtifactProducer, type ISiteContext } from "swooce";
 import { ArtifactWithSrcFile, writeViaPipeline } from "@swooce/core";
 
+function getRandomIntInclusive(min: number, max: number) {
+  min = Math.ceil(min);
+  max = Math.floor(max);
+  return Math.floor(Math.random() * (max - min + 1)) + min; // The maximum is inclusive and the minimum is inclusive
+}
+
 class IndexPageArtifact extends ArtifactWithSrcFile {}
 
 async function scan(siteContext: ISiteContext) {
   const srcFileURL = new URL(import.meta.url);
-  const route = `/${posixRelative(`${siteContext.projectDirURL.href}/src/pages/`, srcFileURL.href)}.html`;
+  const route = `/${posixRelative(`${siteContext.projectDirURL.href}/src/site/pages/`, srcFileURL.href)}.html`;
   const artifact = [new IndexPageArtifact(route, "text/html", srcFileURL)];
 
   return Promise.resolve(artifact);
@@ -18,6 +24,8 @@ async function read(
   _siteContext: ISiteContext,
   _artifact: IndexPageArtifact,
 ): Promise<Readable> {
+  const hours = getRandomIntInclusive(1, 12);
+
   const window = new Window();
   const document = window.document;
   const documentHTML = `
@@ -25,17 +33,18 @@ async function read(
 <html>
   <head>
     <title>
-      My Astro Site - Index
+      My Showcase Site - Index
     </title>
   </head>
   <body>
-    <h1>My Astro Site - Index</h1>
+    <h1>My Showcase Site - Index</h1>
     <img
       src="/clock-drawing.png"
     />
     <img
       src="/clock-drawing.svg"
     />
+    <p>So how's about we put ${hours} hours on the clock?</p>
   </body>
 </html>
 `;
@@ -43,7 +52,9 @@ async function read(
 
   await window.happyDOM.waitUntilComplete();
 
-  return Readable.from(documentHTML);
+  const outDocumentHTML = document.documentElement.outerHTML;
+
+  return Readable.from(outDocumentHTML);
 }
 
 const producer = {

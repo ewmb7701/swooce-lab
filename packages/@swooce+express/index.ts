@@ -22,7 +22,8 @@ function createMiddleware(siteContext: ISiteContext, siteIndex: ISiteIndex) {
       if (artifact.mimeType !== null) {
         res.setHeader("Content-Type", artifact.mimeType);
       }
-      await producer.write(siteContext, artifact, res);
+      const readable = await producer.read(siteContext, artifact);
+      await producer.write(siteContext, artifact, readable, res);
       res.end();
     } catch (err) {
       next(err);

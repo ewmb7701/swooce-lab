@@ -36,20 +36,20 @@ Examples include:
 
 Responsible for writeting the output representation of an artifact into a target directory.
 
-## ArtifactResolver
+## ArtifactFinder
 
-An **ArtifactResolver** is responsible for discovering artifacts and constructing the artifact graph.
+An **ArtifactFinder** is responsible for discovering artifacts and constructing the artifact graph.
 
-Resolvers operate exclusively on the filesystem. They locate concrete source files (typically via glob patterns or directory conventions) and return the corresponding artifacts. Resolvers never synthesize "virtual" artifacts.
+Finders operate exclusively on the filesystem. They locate concrete source files (typically via glob patterns or directory conventions) and return the corresponding artifacts. Finders never synthesize "virtual" artifacts.
 
-Key properties of resolvers in swooce:
+Key properties of finders in swooce:
 
-- **File-backed only**: every resolved artifact corresponds to a real file on disk
-- **Pure discovery**: resolvers do not write output or perform transformations
-- **Composable**: resolvers may delegate to or invoke other resolvers
+- **File-backed only**: every findd artifact corresponds to a real file on disk
+- **Pure discovery**: finders do not write output or perform transformations
+- **Composable**: finders may delegate to or invoke other finders
 - **Explicit**: resolution order and structure are defined by the pipeline, not inferred implicitly
 
-Resolvers may return:
+Finders may return:
 
 - a single artifact
 - multiple artifacts
@@ -62,9 +62,9 @@ This allows pipelines to model both one-to-one and one-to-many resolution patter
 - Resolving all pages in `src/site/pages/*.ts`
 - Resolving all static assets in `src/site/assets/**`
 - Resolving a directory of markdown files into multiple document artifacts
-- Resolving resolver modules dynamically (meta-resolution)
+- Resolving finder modules dynamically (meta-resolution)
 
-Resolvers are executed as part of a pipeline and are fully controlled by pipeline policy. Different pipelines may resolve the same project layout in entirely different ways.
+Finders are executed as part of a pipeline and are fully controlled by pipeline policy. Different pipelines may find the same project layout in entirely different ways.
 
 ## Pipeline
 
@@ -72,11 +72,11 @@ Pipelines define opinionated build behavior built on top of `swooce` core.
 
 A pipeline defines:
 
-- Execution order: the sequence in which resolvers and writers are invoked
-- Selection of resolvers and writers to run
-- Coordination of artifact flow from resolvers to writers
+- Execution order: the sequence in which finders and writers are invoked
+- Selection of finders and writers to run
+- Coordination of artifact flow from finders to writers
 
-Pipelines orchestrate resolvers and writers but do not define _how_ artifacts are resolved or writeted; those policies are defined in the `SiteContext`.
+Pipelines orchestrate finders and writers but do not define _how_ artifacts are findd or writeted; those policies are defined in the `SiteContext`.
 
 This `swooce` package itself does not provide a pipeline.
 
@@ -84,9 +84,9 @@ This `swooce` package itself does not provide a pipeline.
 
 The `SiteContext` provides shared, read-only policy and coordination data for a pipeline run.
 
-It represents the execution environment in which resolvers and writers operate. Rather than hard-coding assumptions about project layout, routing, or emission behavior, `swooce` passes this information explicitly via the `SiteContext`.
+It represents the execution environment in which finders and writers operate. Rather than hard-coding assumptions about project layout, routing, or emission behavior, `swooce` passes this information explicitly via the `SiteContext`.
 
-Resolvers and writers receive the `SiteContext` as an explicit parameter and must not rely on global state.
+Finders and writers receive the `SiteContext` as an explicit parameter and must not rely on global state.
 
 The `SiteContext` is created by the build script and is immutable for the duration of the run.
 

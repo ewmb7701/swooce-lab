@@ -1,132 +1,108 @@
-import { Writable } from "node:stream";
+import { Readable } from "node:stream";
 import { dirname as osPathDirname } from "node:path";
 import { relative as posixRelative } from "node:path/posix";
+import { createReadStream } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { lookup as getMimeType } from "mime-types";
-import { Document, Window } from "happy-dom";
+import { Window } from "happy-dom";
 import {
   type ArtifactRoute,
-  type IArtifact,
+  type IArtifactProducer,
   type ISite,
   type ISiteContext,
 } from "swooce";
 import {
-  createDynamicGlobArtifactResolver,
-  createFactoryGlobArtifactResolver,
-  writeArtifactViaCopy,
-  SrcFileArtifact,
-  type IArtifactWithSrcContent,
-  type IArtifactWithSrcFile,
+  ArtifactWithSrcFile,
+  produceGlobViaImport,
+  scanGlobViaFactory,
+  writeViaPipeline,
 } from "@swooce/core";
 
-type AstroModulePagesArtifact = SrcFileArtifact &
-  IArtifactWithSrcContent<Document>;
-
-type AstroMarkdownPagesArtifactContent = string;
-
-class AstroMarkdownPagesArtifact
-  extends SrcFileArtifact
-  implements
-    IArtifact,
-    IArtifactWithSrcFile,
-    IArtifactWithSrcContent<AstroMarkdownPagesArtifactContent>
-{
-  async fetchSrcContent(_siteContext: AstroSiteContext): Promise<string> {
-    const srcFileText = await (await fetch(this.srcFileURL)).text();
-    return srcFileText;
-  }
-
+class MarkdownPageArtifact extends ArtifactWithSrcFile {
   constructor(route: ArtifactRoute, srcFileURL: URL) {
-    super(route, "text/html", srcFileURL);
+    super(route, "text/markdown", srcFileURL);
   }
 }
 
-class AstroPublicArtifact extends SrcFileArtifact {}
+async function readMarkdownPage(
+  _siteContext: ISiteContext,
+  artifact: MarkdownPageArtifact,
+) {
+  const srcFileText = await (await fetch(artifact.srcFileURL)).text();
 
-type AstroArtifact =
-  | AstroModulePagesArtifact
-  | AstroMarkdownPagesArtifact
-  | AstroPublicArtifact;
-
-const resolveModulePagesArtifact =
-  createDynamicGlobArtifactResolver<AstroModulePagesArtifact>(
-    "./src/pages/**/*.ts",
-    (siteContext) => siteContext.projectDirURL,
-  );
-
-const resolveMarkdownPagesArtifact =
-  createFactoryGlobArtifactResolver<AstroMarkdownPagesArtifact>(
-    "./src/pages/**/*.md",
-    (siteContext) => siteContext.projectDirURL,
-    (siteContext, srcFileURL) =>
-      new AstroMarkdownPagesArtifact(
-        siteContext.getArtifactRouteUsingSrcFileURL(srcFileURL),
-        srcFileURL,
-      ),
-  );
-
-async function resolvePublicArtifact(siteContext: AstroSiteContext) {
-  const resolveDynamicGlobArtifact =
-    createFactoryGlobArtifactResolver<AstroPublicArtifact>(
-      "./public/**",
-      (siteContext) => siteContext.projectDirURL,
-      (siteContext, srcFileURL) => {
-        const srcFilePath = srcFileURL.href;
-        const route = siteContext.getArtifactRouteUsingSrcFileURL(srcFileURL);
-        const mimeType = getMimeType(srcFilePath) || null;
-
-        const artifact = new SrcFileArtifact(route, mimeType, srcFileURL);
-
-        return artifact;
-      },
-    );
-
-  const publicArtifact = await resolveDynamicGlobArtifact(siteContext);
-
-  return publicArtifact;
-}
-
-async function writeAstroModulePagesArtifact(
-  siteContext: AstroSiteContext,
-  artifact: AstroModulePagesArtifact,
-  artifactTargetWritable: Writable,
-): Promise<void> {
-  const srcContent = await artifact.fetchSrcContent(siteContext);
-  // TODO transform
-  const targetContent = srcContent.documentElement.outerHTML;
-  artifactTargetWritable.write(targetContent);
-}
-
-async function writeAstroMarkdownPagesArtifact(
-  siteContext: AstroSiteContext,
-  artifact: AstroArtifact,
-  artifactTargetWritable: Writable,
-): Promise<void> {
-  // TODO type guard
-  const srcContent = await (
-    artifact as AstroModulePagesArtifact
-  ).fetchSrcContent(siteContext);
-
+  // create document content
   const window = new Window();
   const document = window.document;
   const documentHTML = `
-  <!DOCTYPE html>
-  <html>
-    <head>
-      <title>
-        markdown page
-      </title>
-    </head>
-    <body>
-      ${srcContent}
-    </body>
-  </html>
-  `;
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>
+      Post
+    </title>
+  </head>
+  <body>
+    <pre>
+      ${srcFileText}
+    </pre>
+  </body>
+</html>
+`;
   document.write(documentHTML);
 
   await window.happyDOM.waitUntilComplete();
 
-  artifactTargetWritable.write(documentHTML);
+  return Readable.from(documentHTML);
 }
+
+async function scanMarkdownPage(siteContext: ISiteContext) {
+  return scanGlobViaFactory(
+    "./src/pages/**/*.md",
+    siteContext.projectDirURL,
+    (srcFileURL) => {
+      const route = `/${posixRelative(`${siteContext.projectDirURL.href}/src/pages/`, srcFileURL.href)}.html`;
+
+      return new MarkdownPageArtifact(route, srcFileURL);
+    },
+  );
+}
+
+const produceMarkdownPage = {
+  scan: scanMarkdownPage,
+  read: readMarkdownPage,
+  write: writeViaPipeline,
+} satisfies IArtifactProducer;
+
+class PublicArtifact extends ArtifactWithSrcFile {}
+
+async function scanPublicArtifact(siteContext: ISiteContext) {
+  return scanGlobViaFactory(
+    "./public/**/*",
+    siteContext.projectDirURL,
+    (srcFileURL) => {
+      const srcFilePath = fileURLToPath(srcFileURL);
+      const route = `/${posixRelative(`${siteContext.projectDirURL.href}/public/`, srcFileURL.href)}`;
+      const mimeType = getMimeType(srcFilePath) || null;
+
+      return new PublicArtifact(route, mimeType, srcFileURL);
+    },
+  );
+}
+
+async function readPublicArtifact(
+  _siteContext: ISiteContext,
+  artifact: PublicArtifact,
+): Promise<Readable> {
+  const readable = createReadStream(artifact.srcFileURL);
+
+  return readable;
+}
+
+const producePublicArtifact = {
+  scan: scanPublicArtifact,
+  read: readPublicArtifact,
+  write: writeViaPipeline,
+} satisfies IArtifactProducer;
 
 interface AstroSiteContext extends ISiteContext {}
 
@@ -136,45 +112,21 @@ function createSiteContext(packageJsonURL: URL): AstroSiteContext {
   const targetDirURL = new URL("./dist/", projectDirURL);
 
   return {
-    getArtifactRouteUsingSrcFileURL: function (
-      artifactSrcFileURL: URL,
-    ): string {
-      // get relative path of artifact wrt to project dir
-      const artifactSrcFileRelativeURLPath = `/${posixRelative(
-        this.projectDirURL.href,
-        artifactSrcFileURL.href,
-      )}`;
-
-      if (artifactSrcFileRelativeURLPath.startsWith("/src/pages/")) {
-        return `${artifactSrcFileRelativeURLPath.slice(`/src/pages/`.length - 1)}.html`;
-      } else if (artifactSrcFileRelativeURLPath.startsWith("/public/")) {
-        return artifactSrcFileRelativeURLPath.slice("/public/".length - 1);
-      } else {
-        throw new Error(
-          `Not supported! artifactSrcFileURL=${artifactSrcFileURL} artifactSrcFileRelativeURLPath=${artifactSrcFileRelativeURLPath}`,
-        );
-      }
-    },
     projectDirURL: projectDirURL,
     srcDirURL: srcDirURL,
     targetDirURL: targetDirURL,
   };
 }
 
-function createSite(): ISite {
+async function createSite(siteContext: ISiteContext): Promise<ISite> {
+  const pageArtifactProducer = await produceGlobViaImport(
+    "./src/pages/**/*.ts",
+    siteContext.projectDirURL,
+  );
   const artifactProducers = [
-    {
-      resolve: resolveModulePagesArtifact,
-      write: writeAstroModulePagesArtifact,
-    },
-    {
-      resolve: resolveMarkdownPagesArtifact,
-      write: writeAstroMarkdownPagesArtifact,
-    },
-    {
-      resolve: resolvePublicArtifact,
-      write: writeArtifactViaCopy,
-    },
+    ...pageArtifactProducer,
+    produceMarkdownPage,
+    producePublicArtifact,
   ];
 
   return {

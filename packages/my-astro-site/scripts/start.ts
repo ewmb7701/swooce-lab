@@ -1,13 +1,13 @@
 // /scripts/start.ts
 import { default as express } from "express";
 import { createSiteIndex } from "swooce";
-import createSite, { createSiteContext } from "@swooce/framework-astro";
 import { createMiddleware } from "@swooce/express";
+import createSite, { createSiteContext } from "@swooce/framework-astro";
 
 const myShowcaseSiteContext = createSiteContext(
   new URL("../package.json", import.meta.url),
 );
-const myShowcaseSite = createSite();
+const myShowcaseSite = await createSite(myShowcaseSiteContext);
 const myShowcaseSiteIndex = await createSiteIndex(
   myShowcaseSiteContext,
   myShowcaseSite,

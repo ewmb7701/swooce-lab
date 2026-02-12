@@ -1,18 +1,19 @@
-import { type Writable } from "node:stream";
+import { Readable, type Writable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import { dirname } from "node:path";
-import { createReadStream, createWriteStream } from "node:fs";
+import { createWriteStream } from "node:fs";
 import { mkdir, rm } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { glob } from "glob";
 import {
   Artifact,
   type IArtifact,
-  type ArtifactResolver,
   type ArtifactRoute,
   type ArtifactWriter,
   type ISiteContext,
   type ISite,
+  type ArtifactReader,
+  type IArtifactProducer,
 } from "swooce";
 
 interface IArtifactWithSrcFile {
@@ -24,14 +25,7 @@ interface IArtifactWithSrcFile {
   readonly srcFileURL: URL;
 }
 
-interface IArtifactWithSrcContent<TSrcContent> {
-  /**
-   * Fetch the content of the src of this artifact.
-   */
-  fetchSrcContent(siteContext: ISiteContext): Promise<TSrcContent>;
-}
-
-class SrcFileArtifact
+class ArtifactWithSrcFile
   extends Artifact
   implements IArtifact, IArtifactWithSrcFile
 {
@@ -43,89 +37,70 @@ class SrcFileArtifact
   }
 }
 
-/**
- * Creates an artifact resolver which resolves artifacts from matching files
- * using a given factory.
- */
-function createFactoryGlobArtifactResolver<T extends Artifact>(
+async function scanGlobViaFactory<IArtifact>(
   pattern: string,
-  getCwdURL: (siteContext: ISiteContext) => URL,
-  artifactFactory: (siteContext: ISiteContext, srcFileURL: URL) => T,
-): ArtifactResolver<T> {
-  return async (siteContext) => {
-    const cwd = getCwdURL(siteContext);
+  cwd: string | URL,
+  artifactFactory: (srcFileURL: URL) => IArtifact,
+): Promise<ReadonlyArray<IArtifact>> {
+  const matches = await glob(pattern, {
+    cwd: cwd,
+    nodir: true,
+    posix: true,
+    dotRelative: true,
+  });
 
-    const matches = await glob(pattern, {
-      cwd: cwd,
-      nodir: true,
-      posix: true,
-      dotRelative: true,
-    });
+  const artifact = matches.map((relativePath) =>
+    artifactFactory(new URL(relativePath, cwd)),
+  );
 
-    return matches.map((relativePath) =>
-      artifactFactory(siteContext, new URL(relativePath, cwd)),
-    );
-  };
+  return Promise.resolve(artifact);
 }
 
 /**
- * Creates an artifact resolver which resolves artifacts from matching files
+ * Creates an artifact finder which finds artifacts from matching files
  * via dynamic import.
  *
- * The matching files must be ES modules with an ArtifactResolver
+ * The matching files must be ES modules with an ArtifactFinder
  * as the default export.
  */
-function createDynamicGlobArtifactResolver<
-  TResolveArtifact extends IArtifact = IArtifact,
->(
+async function produceGlobViaImport(
   pattern: string,
-  getCwdURL: (siteContext: ISiteContext) => URL,
-): ArtifactResolver<TResolveArtifact> {
-  return async (siteContext) => {
-    const cwd = getCwdURL(siteContext);
+  cwd: URL,
+): Promise<ReadonlyArray<IArtifactProducer>> {
+  const matches = await glob(pattern, {
+    cwd: cwd,
+    nodir: true,
+    posix: true,
+    dotRelative: true,
+  });
 
-    const matches = await glob(pattern, {
-      cwd: cwd,
-      nodir: true,
-      posix: true,
-      dotRelative: true,
-    });
+  const artifacts: IArtifactProducer[] = [];
 
-    const artifacts: TResolveArtifact[] = [];
+  for (const relativePath of matches) {
+    const finderModuleURL = new URL(relativePath, cwd);
+    const finderModule = await import(fileURLToPath(finderModuleURL));
 
-    for (const relativePath of matches) {
-      const resolverModuleURL = new URL(relativePath, cwd);
-      const resolverModule = await import(fileURLToPath(resolverModuleURL));
+    const findArtifact = finderModule.default as IArtifactProducer;
 
-      const resolveArtifact =
-        resolverModule.default as ArtifactResolver<TResolveArtifact>;
+    artifacts.push(findArtifact);
+  }
 
-      const resolvedArtifact = await resolveArtifact(siteContext);
-
-      if (Array.isArray(resolvedArtifact)) {
-        artifacts.push(...resolvedArtifact);
-      } else {
-        artifacts.push(resolvedArtifact);
-      }
-    }
-
-    return artifacts;
-  };
+  return Promise.resolve(artifacts);
 }
 
-async function writeArtifactViaCopy(
+async function writeViaPipeline(
   _siteContext: ISiteContext,
-  artifact: IArtifact & IArtifactWithSrcFile,
+  _artifact: IArtifact,
+  artifactSrcReadable: Readable,
   artifactTargetWritable: Writable,
 ) {
-  const srcFileURL = artifact.srcFileURL;
-  const srcReadable = createReadStream(srcFileURL);
-  await pipeline(srcReadable, artifactTargetWritable);
+  await pipeline(artifactSrcReadable, artifactTargetWritable);
 }
 
 async function writeArtifactToFs<TArtifact extends IArtifact>(
   siteContext: ISiteContext,
   artifact: TArtifact,
+  readArtifact: ArtifactReader<TArtifact>,
   writeArtifact: ArtifactWriter<TArtifact>,
 ) {
   const artifactTargetFileURL = new URL(
@@ -135,8 +110,14 @@ async function writeArtifactToFs<TArtifact extends IArtifact>(
   const artifactTargetFileDir = `${dirname(fileURLToPath(artifactTargetFileURL))}`;
   await mkdir(artifactTargetFileDir, { recursive: true });
 
-  const artifactTargetFileWritable = createWriteStream(artifactTargetFileURL);
-  await writeArtifact(siteContext, artifact, artifactTargetFileWritable);
+  const artifactSrcReadable = await readArtifact(siteContext, artifact);
+  const artifactTargetWritable = createWriteStream(artifactTargetFileURL);
+  await writeArtifact(
+    siteContext,
+    artifact,
+    artifactSrcReadable,
+    artifactTargetWritable,
+  );
 }
 
 async function writeSiteToFs(
@@ -147,12 +128,13 @@ async function writeSiteToFs(
   await mkdir(siteContext.targetDirURL, { recursive: true });
 
   for (const iArtifactProducer of site.artifactProducer) {
-    const iResolvedArtifact = await iArtifactProducer.resolve(siteContext);
+    const iFindArtifact = await iArtifactProducer.scan(siteContext);
 
-    for (const iiResolvedArtifact of iResolvedArtifact) {
+    for (const iiFindArtifact of iFindArtifact) {
       await writeArtifactToFs(
         siteContext,
-        iiResolvedArtifact,
+        iiFindArtifact,
+        iArtifactProducer.read,
         iArtifactProducer.write,
       );
     }
@@ -160,12 +142,11 @@ async function writeSiteToFs(
 }
 
 export {
-  SrcFileArtifact,
+  ArtifactWithSrcFile,
   writeSiteToFs,
-  writeArtifactViaCopy,
-  createDynamicGlobArtifactResolver,
-  createFactoryGlobArtifactResolver,
+  writeViaPipeline,
+  scanGlobViaFactory,
+  produceGlobViaImport,
   type IArtifact,
   type IArtifactWithSrcFile,
-  type IArtifactWithSrcContent,
 };

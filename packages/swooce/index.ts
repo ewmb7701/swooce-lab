@@ -1,4 +1,4 @@
-import { Writable } from "node:stream";
+import { Readable, Writable } from "node:stream";
 
 type ArtifactRoute = string;
 
@@ -17,27 +17,35 @@ class Artifact implements IArtifact {
   }
 }
 
+type ArtifactReader<TArtifact> = (
+  siteContext: ISiteContext,
+  artifact: TArtifact,
+) => Promise<Readable>;
+
 type ArtifactWriter<TArtifact> = (
   siteContext: ISiteContext,
   artifact: TArtifact,
+  artifactSrcReadable: Readable,
   artifactTargetWritable: Writable,
 ) => Promise<void>;
 
-type ArtifactResolver<TResolvedArtifact> = (
+type ArtifactFinder<TFinddArtifact> = (
   siteContext: ISiteContext,
-) => Promise<Array<TResolvedArtifact>>;
+) => Promise<Array<TFinddArtifact>>;
 
 interface IArtifactProducer {
-  resolve(ctx: ISiteContext): Promise<ReadonlyArray<IArtifact>>;
+  scan(ctx: ISiteContext): Promise<ReadonlyArray<IArtifact>>;
+  read(ctx: ISiteContext, artifact: IArtifact): Promise<Readable>;
   write(
     ctx: ISiteContext,
     artifact: IArtifact,
+    artifactSrcReadable: Readable,
     artifactTargetWritable: Writable,
   ): Promise<void>;
 }
 
 /**
- * Site-wide context shared between all primitives, like project paths and resolvers.
+ * Site-wide context shared between all primitives, like project paths and finders.
  *
  * Provided to all primitives.
  */
@@ -65,11 +73,6 @@ interface ISiteContext {
    * - path of ./dist
    */
   readonly targetDirURL: URL;
-
-  /**
-   * Get the route of an artifact using the src file URL of the artifact.
-   */
-  getArtifactRouteUsingSrcFileURL: (artifactSrcFileURL: URL) => ArtifactRoute;
 }
 
 interface ISite {
@@ -92,7 +95,7 @@ async function createSiteIndex(
   const entries = (
     await Promise.all(
       site.artifactProducer.map(async (producer) => {
-        const artifacts = await producer.resolve(ctx);
+        const artifacts = await producer.scan(ctx);
 
         const iiSiteIndexEntry = artifacts.map(
           (artifact) =>
@@ -119,8 +122,9 @@ export {
   Artifact,
   type IArtifact,
   type ArtifactRoute,
-  type ArtifactResolver,
+  type ArtifactFinder,
   type ArtifactWriter,
+  type ArtifactReader,
   type IArtifactProducer,
   type ISite,
   type ISiteIndex,

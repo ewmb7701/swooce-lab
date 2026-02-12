@@ -1,8 +1,8 @@
 // /scripts/start.ts
 import { default as express } from "express";
-import { createSiteContext, createSite } from "../src/site.ts";
 import { createSiteIndex } from "swooce";
 import { createMiddleware } from "@swooce/express";
+import { createSiteContext, createSite } from "../src/site.ts";
 
 const myShowcaseSiteContext = createSiteContext(
   new URL("../package.json", import.meta.url),
